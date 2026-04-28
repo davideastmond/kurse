@@ -192,7 +192,6 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", ["ADMIN", "STUDENT"]);
@@ -210,10 +209,10 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    email: varchar("email", { length: 320 }).notNull(),
+    email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     role: userRoleEnum("role").notNull().default("STUDENT"),
-    name: varchar("name", { length: 120 }).notNull(),
+    name: text("name").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -230,8 +229,8 @@ export const courses = pgTable(
   "courses",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    title: varchar("title", { length: 180 }).notNull(),
-    slug: varchar("slug", { length: 200 }).notNull(),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
     description: text("description").notNull(),
     coverImageUrl: text("cover_image_url"),
     structure: jsonb("structure").notNull(),
@@ -282,7 +281,7 @@ export const lessonProgress = pgTable(
     enrollmentId: uuid("enrollment_id")
       .notNull()
       .references(() => enrollments.id),
-    lessonId: varchar("lesson_id", { length: 120 }).notNull(),
+    lessonId: text("lesson_id").notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (t) => ({
@@ -297,11 +296,11 @@ export const evaluations = pgTable("evaluations", {
   courseId: uuid("course_id")
     .notNull()
     .references(() => courses.id),
-  title: varchar("title", { length: 180 }).notNull(),
+  title: text("title").notNull(),
   scope: evaluationScopeEnum("scope").notNull(),
   definition: jsonb("definition").notNull(),
   passingScore: integer("passing_score").notNull().default(70),
-  moduleId: varchar("module_id", { length: 120 }),
+  moduleId: text("module_id"),
 });
 
 export const evaluationAttempts = pgTable("evaluation_attempts", {
