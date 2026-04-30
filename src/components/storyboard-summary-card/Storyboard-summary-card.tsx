@@ -1,8 +1,24 @@
 import Link from "next/link";
 
-import { type MockCourse } from "@/app/admin/mock-course-data";
+import { type CourseStatus } from "@/shared/types/storyboard";
 
-type StatusClasses = Record<MockCourse["status"], string>;
+export type DashboardCourse = {
+  id: string;
+  title: string;
+  slug: string;
+  status: CourseStatus;
+  synopsis: string;
+  estimatedDuration: string;
+  enrolledCount: number;
+  coverAccent: string;
+  audience: string;
+  createdAt: string;
+  updatedAt: string;
+  modules: unknown[];
+  version: number;
+};
+
+type StatusClasses = Record<CourseStatus, string>;
 
 const STATUS_CLASSES: StatusClasses = {
   PUBLISHED: "bg-emerald-50 text-emerald-800",
@@ -11,7 +27,7 @@ const STATUS_CLASSES: StatusClasses = {
 };
 
 type StoryboardSummaryCardProps = {
-  course: MockCourse;
+  course: DashboardCourse;
 };
 
 export default function StoryboardSummaryCard({

@@ -1,8 +1,10 @@
 import Link from "next/link";
 
 import { fetchSeededCourses } from "@/app/actions/courses";
-import { type MockCourse } from "@/app/admin/mock-course-data";
-import StoryboardSummaryCard from "@/components/storyboard-summary-card/Storyboard-summary-card";
+
+import StoryboardSummaryCard, {
+  type DashboardCourse,
+} from "@/components/storyboard-summary-card/Storyboard-summary-card";
 import { CourseStatus } from "@/shared/types/storyboard";
 
 type SortOption = "updatedAt_desc" | "createdAt_desc" | "title_asc";
@@ -13,7 +15,7 @@ type DashboardPageProps = {
 
 type SeededCourseStructure = {
   courseId?: string;
-  modules?: MockCourse["modules"];
+  modules?: unknown[];
   metadata?: {
     synopsis?: string;
     audience?: string;
@@ -110,7 +112,7 @@ function toIsoString(value: Date | string) {
 
 function mapSeededCourseToDashboardCourse(
   course: SeededCourseRecord,
-): MockCourse {
+): DashboardCourse {
   const structure = course.structure ?? {};
   const metadata = structure.metadata ?? {};
 
@@ -123,8 +125,6 @@ function mapSeededCourseToDashboardCourse(
     createdAt: toIsoString(course.createdAt),
     updatedAt: toIsoString(course.updatedAt),
     enrolledCount: 0,
-    completionRate: 0,
-    averageScore: 0,
     coverAccent: "from-sky-200 via-cyan-50 to-white",
     synopsis: metadata.synopsis ?? course.description,
     audience: metadata.audience ?? "",

@@ -1,7 +1,6 @@
 import { loadEnvConfig } from "@next/env";
 import { reset } from "drizzle-seed";
 
-import { mockCourses } from "../../../app/admin/mock-course-data";
 import { getDb } from "../../index";
 import * as schema from "../../schema";
 
@@ -41,8 +40,6 @@ async function seedCourses() {
         updatedAt: new Date(),
       },
     });
-
-  console.log(`Seeding ${mockCourses.length} courses from mock-course-data...`);
 
   for (const course of mockCourses) {
     const structure = {
