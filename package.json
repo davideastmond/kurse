@@ -6,11 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed-courses": "tsx src/db/seed/courses/seed.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "drizzle-orm": "^0.45.2",
+    "drizzle-seed": "^0.3.1",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4"
