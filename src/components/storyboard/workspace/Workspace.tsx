@@ -62,6 +62,11 @@ export default function Workspace({ initialCourse }: WorkspaceProps) {
     console.log("Add lesson clicked");
   };
 
+  const handleAddModule = () => {
+    // TODO: Implement add module logic
+    console.log("Add module clicked");
+  };
+
   const handleAddBlock = (blockType: BlockType) => {
     // TODO: Implement add block logic with proper block creation
     console.log("Add block clicked:", blockType);
@@ -92,9 +97,9 @@ export default function Workspace({ initialCourse }: WorkspaceProps) {
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_35%),linear-gradient(180deg,#f8fbff_0%,#eef4ff_52%,#f8fafc_100%)] p-6">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-8 rounded-4xl border border-white/70 bg-white/80 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_35%),linear-gradient(180deg,#f8fbff_0%,#eef4ff_52%,#f8fafc_100%)] p-6 xl:h-screen xl:overflow-hidden">
+      <div className="mx-auto flex h-full max-w-7xl flex-col">
+        <header className="mb-6 shrink-0 rounded-4xl border border-white/70 bg-white/80 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700">
@@ -120,11 +125,9 @@ export default function Workspace({ initialCourse }: WorkspaceProps) {
             </div>
           </div>
         </header>
-        <div className="mb-6">
-          <ToolBar onAddLesson={handleAddLesson} onAddBlock={handleAddBlock} />
-        </div>
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-          <div className="space-y-6">
+
+        <div className="grid flex-1 gap-6 overflow-hidden xl:min-h-0 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="space-y-6 xl:min-h-0 xl:overflow-y-auto xl:pr-2">
             {renderModel.modules.map((moduleItem) => (
               <section key={moduleItem.id} className="space-y-4">
                 <div className="flex flex-col gap-2 px-1 sm:flex-row sm:items-end sm:justify-between">
@@ -187,36 +190,46 @@ export default function Workspace({ initialCourse }: WorkspaceProps) {
             ))}
           </div>
 
-          <aside className="h-fit rounded-4xl border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur xl:sticky xl:top-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
-              Block Detail
-            </p>
-            {selectedBlock ? (
-              <div className="mt-4 space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    {selectedBlock.title}
-                  </h3>
-                  <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">
-                    {selectedBlock.type}
-                  </span>
+          <aside className="h-fit rounded-4xl border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur xl:flex xl:h-full xl:min-h-0 xl:flex-col">
+            <div className="shrink-0">
+              <ToolBar
+                onAddModule={handleAddModule}
+                onAddLesson={handleAddLesson}
+                onAddBlock={handleAddBlock}
+              />
+            </div>
+
+            <div className="mt-5 border-t border-slate-200/80 pt-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Block Detail
+              </p>
+              {selectedBlock ? (
+                <div className="mt-4 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="text-xl font-semibold text-slate-950">
+                      {selectedBlock.title}
+                    </h3>
+                    <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">
+                      {selectedBlock.type}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-6 text-slate-600">
+                    {selectedBlock.detail}
+                  </p>
+                  <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                    Expanded media or editor view can mount here.
+                  </div>
+                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
+                    Duration: {selectedBlock.duration}
+                  </p>
                 </div>
-                <p className="text-sm leading-6 text-slate-600">
-                  {selectedBlock.detail}
-                </p>
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                  Expanded media or editor view can mount here.
+              ) : (
+                <div className="mt-4 rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-sm leading-6 text-slate-500">
+                  Select a block from any lesson canvas to inspect a larger
+                  detail view.
                 </div>
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
-                  Duration: {selectedBlock.duration}
-                </p>
-              </div>
-            ) : (
-              <div className="mt-4 rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-sm leading-6 text-slate-500">
-                Select a block from any lesson canvas to inspect a larger detail
-                view.
-              </div>
-            )}
+              )}
+            </div>
           </aside>
         </div>
       </div>
