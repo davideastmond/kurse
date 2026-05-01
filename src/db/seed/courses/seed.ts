@@ -3,6 +3,7 @@ import { reset } from "drizzle-seed";
 
 import { getDb } from "../../index";
 import * as schema from "../../schema";
+import { mockCourses } from "./mock-data";
 
 const SEED_ADMIN_ID = "6d8c4e8f-9db2-4ad0-a27e-b2dc98e38510";
 
