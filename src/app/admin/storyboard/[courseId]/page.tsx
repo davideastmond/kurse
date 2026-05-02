@@ -47,5 +47,10 @@ export default async function StoryboardPage({ params }: StoryboardPageProps) {
   const { courseId } = await params;
   const course = (await fetchCourseBySlug(courseId)) as SeededCourseRecord;
 
-  return <Workspace initialCourse={toApiCoursePayload(course)} />;
+  return (
+    <Workspace
+      initialCourse={toApiCoursePayload(course)}
+      courseRecordId={course.id}
+    />
+  );
 }
