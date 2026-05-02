@@ -19,7 +19,9 @@ type LessonCanvasProps = {
   duration?: string;
   objective?: string;
   blocks: LessonCanvasBlock[];
+  isSelected?: boolean;
   selectedBlockId?: string;
+  onCanvasClick?: () => void;
   onBlockClick?: (block: LessonCanvasBlock) => void;
   onLessonAttributesChange?: (values: LessonCanvasEditableValues) => void;
   className?: string;
@@ -51,7 +53,9 @@ export default function LessonCanvas({
   duration,
   objective,
   blocks,
+  isSelected,
   selectedBlockId,
+  onCanvasClick,
   onBlockClick,
   onLessonAttributesChange,
   className,
@@ -119,14 +123,23 @@ export default function LessonCanvas({
   };
 
   const canvasClassName = [
-    "rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,245,249,0.92))] p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+    "rounded-4xl border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,245,249,0.92))] p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] transition-all",
+    isSelected
+      ? "border-sky-300 bg-[linear-gradient(180deg,rgba(240,249,255,0.95),rgba(248,250,252,0.95))] ring-2 ring-sky-100 shadow-[0_20px_55px_rgba(14,165,233,0.18)]"
+      : "",
     className,
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <section id={id} className={canvasClassName}>
+    <section
+      id={id}
+      className={canvasClassName}
+      onClick={() => {
+        onCanvasClick?.();
+      }}
+    >
       <header className="flex flex-col gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
@@ -216,7 +229,8 @@ export default function LessonCanvas({
                 key={block.id}
                 type="button"
                 className={getBlockButtonClasses(isSelected, isInteractive)}
-                onClick={() => {
+                onClick={(event) => {
+                  event.stopPropagation();
                   onBlockClick?.(block);
                 }}
                 aria-pressed={isInteractive ? isSelected : undefined}
