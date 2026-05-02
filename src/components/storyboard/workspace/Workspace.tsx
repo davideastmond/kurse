@@ -3,6 +3,7 @@
 import { saveCourseStoryboard } from "@/app/actions/courses";
 import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
 import { StoryboardBuilder } from "@/app/utils/storyboard-builder/story-board-builder";
+import BlockDetailRenderer from "@/components/storyboard/blocks/Block-detail-renderer";
 import type { LessonCanvasEditableValues } from "@/components/storyboard/lesson-canvas/Lesson-canvas";
 import ModuleSection from "@/components/storyboard/module-section/Module-section";
 import ToolBar from "@/components/storyboard/toolbar/ToolBar";
@@ -597,32 +598,7 @@ export default function Workspace({
               <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
                 Block Detail
               </p>
-              {selectedBlock ? (
-                <div className="mt-4 space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-xl font-semibold text-slate-950">
-                      {selectedBlock.title}
-                    </h3>
-                    <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">
-                      {selectedBlock.type}
-                    </span>
-                  </div>
-                  <p className="text-sm leading-6 text-slate-600">
-                    {selectedBlock.detail}
-                  </p>
-                  <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                    Expanded media or editor view can mount here.
-                  </div>
-                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
-                    Duration: {selectedBlock.duration}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-4 rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-sm leading-6 text-slate-500">
-                  Select a block from any lesson canvas to inspect a larger
-                  detail view.
-                </div>
-              )}
+              <BlockDetailRenderer block={selectedBlock} />
             </div>
           </aside>
         </div>
