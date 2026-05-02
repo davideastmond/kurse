@@ -1,11 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import {
-  StoryboardBuilder,
-  type ApiCoursePayload,
-} from "@/app/utils/storyboard-builder/story-board-builder";
+import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
+import { StoryboardBuilder } from "@/app/utils/storyboard-builder/story-board-builder";
 import LessonCanvas, {
   type LessonCanvasEditableValues,
 } from "@/components/storyboard/lesson-canvas/Lesson-canvas";
@@ -18,8 +16,37 @@ type WorkspaceProps = {
   initialCourse: ApiCoursePayload;
 };
 
+type SelectionType = "MODULE" | "LESSON" | "BLOCK";
+
+type StoryboardSelection = {
+  type: SelectionType;
+  moduleId: string;
+  lessonId?: string;
+  blockId?: string;
+};
+
+function isSameSelection(
+  a: StoryboardSelection | null,
+  b: StoryboardSelection | null,
+) {
+  if (a === b) {
+    return true;
+  }
+
+  if (!a || !b) {
+    return false;
+  }
+
+  return (
+    a.type === b.type &&
+    a.moduleId === b.moduleId &&
+    a.lessonId === b.lessonId &&
+    a.blockId === b.blockId
+  );
+}
+
 export default function Workspace({ initialCourse }: WorkspaceProps) {
-  const [selectedBlockId, setSelectedBlockId] = useState<string>();
+  const [selection, setSelection] = useState<StoryboardSelection | null>(null);
   const [lessonAttributeEdits, setLessonAttributeEdits] = useState<
     Record<string, LessonCanvasEditableValues>
   >({});
@@ -37,25 +64,151 @@ export default function Workspace({ initialCourse }: WorkspaceProps) {
     return builderResult.value.toRenderModel();
   }, [builderResult]);
 
-  const selectedBlock = useMemo(() => {
-    if (!selectedBlockId || !renderModel) {
+  const normalizedSelection = useMemo(() => {
+    if (!selection || !renderModel) {
       return null;
     }
 
-    for (const moduleItem of renderModel.modules) {
-      for (const lessonItem of moduleItem.lessons) {
-        const match = lessonItem.blocks.find(
-          (block) => block.id === selectedBlockId,
-        );
+    const moduleItem = renderModel.modules.find(
+      (candidate) => candidate.id === selection.moduleId,
+    );
 
-        if (match) {
-          return match;
-        }
-      }
+    if (!moduleItem) {
+      return null;
     }
 
-    return null;
-  }, [renderModel, selectedBlockId]);
+    if (selection.type === "MODULE") {
+      return {
+        type: "MODULE" as const,
+        moduleId: moduleItem.id,
+      };
+    }
+
+    if (!selection.lessonId) {
+      return {
+        type: "MODULE" as const,
+        moduleId: moduleItem.id,
+      };
+    }
+
+    const lessonItem = moduleItem.lessons.find(
+      (candidate) => candidate.id === selection.lessonId,
+    );
+
+    if (!lessonItem) {
+      return {
+        type: "MODULE" as const,
+        moduleId: moduleItem.id,
+      };
+    }
+
+    if (selection.type === "LESSON") {
+      return {
+        type: "LESSON" as const,
+        moduleId: moduleItem.id,
+        lessonId: lessonItem.id,
+      };
+    }
+
+    if (!selection.blockId) {
+      return {
+        type: "LESSON" as const,
+        moduleId: moduleItem.id,
+        lessonId: lessonItem.id,
+      };
+    }
+
+    const blockItem = lessonItem.blocks.find(
+      (candidate) => candidate.id === selection.blockId,
+    );
+
+    if (!blockItem) {
+      return {
+        type: "LESSON" as const,
+        moduleId: moduleItem.id,
+        lessonId: lessonItem.id,
+      };
+    }
+
+    return {
+      type: "BLOCK" as const,
+      moduleId: moduleItem.id,
+      lessonId: lessonItem.id,
+      blockId: blockItem.id,
+    };
+  }, [renderModel, selection]);
+
+  useEffect(() => {
+    if (isSameSelection(selection, normalizedSelection)) {
+      return;
+    }
+
+    setSelection(normalizedSelection);
+  }, [normalizedSelection, selection]);
+
+  const selectedModuleId = normalizedSelection?.moduleId;
+  const selectedLessonId = normalizedSelection?.lessonId;
+  const selectedBlockId = normalizedSelection?.blockId;
+
+  const selectedModule = useMemo(() => {
+    if (!selectedModuleId || !renderModel) {
+      return null;
+    }
+
+    return (
+      renderModel.modules.find(
+        (moduleItem) => moduleItem.id === selectedModuleId,
+      ) ?? null
+    );
+  }, [renderModel, selectedModuleId]);
+
+  const selectedLesson = useMemo(() => {
+    if (!selectedModule || !selectedLessonId) {
+      return null;
+    }
+
+    return (
+      selectedModule.lessons.find(
+        (lessonItem) => lessonItem.id === selectedLessonId,
+      ) ?? null
+    );
+  }, [selectedLessonId, selectedModule]);
+
+  const selectedBlock = useMemo(() => {
+    if (!selectedLesson || !selectedBlockId) {
+      return null;
+    }
+
+    return (
+      selectedLesson.blocks.find(
+        (blockItem) => blockItem.id === selectedBlockId,
+      ) ?? null
+    );
+  }, [selectedBlockId, selectedLesson]);
+
+  const selectModule = (moduleId: string) => {
+    setSelection({
+      type: "MODULE",
+      moduleId,
+    });
+  };
+
+  const selectLesson = (moduleId: string, lessonId: string) => {
+    setSelection({
+      type: "LESSON",
+      moduleId,
+      lessonId,
+    });
+  };
+
+  const selectBlock = (moduleId: string, lessonId: string, blockId: string) => {
+    setSelection({
+      type: "BLOCK",
+      moduleId,
+      lessonId,
+      blockId,
+    });
+  };
 
   const handleAddLesson = () => {
     // TODO: Implement add lesson logic
@@ -129,13 +282,30 @@ export default function Workspace({ initialCourse }: WorkspaceProps) {
         <div className="grid flex-1 gap-6 overflow-hidden xl:min-h-0 xl:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="space-y-6 xl:min-h-0 xl:overflow-y-auto xl:pr-2">
             {renderModel.modules.map((moduleItem) => (
-              <section key={moduleItem.id} className="space-y-4">
+              <section
+                key={moduleItem.id}
+                className={`space-y-4 rounded-3xl border p-3 transition-all ${
+                  selectedModuleId === moduleItem.id
+                    ? "border-sky-200 bg-white/80 ring-2 ring-sky-100 shadow-[0_16px_40px_rgba(14,165,233,0.12)]"
+                    : "border-transparent"
+                }`}
+              >
                 <div className="flex flex-col gap-2 px-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
                       Module
+                      {selectedModuleId === moduleItem.id ? (
+                        <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] tracking-[0.12em] text-sky-700">
+                          Selected
+                        </span>
+                      ) : null}
                     </p>
-                    <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+                    <h2
+                      className="cursor-pointer text-2xl font-semibold tracking-tight text-slate-900 transition-colors hover:text-sky-700"
+                      onClick={() => {
+                        selectModule(moduleItem.id);
+                      }}
+                    >
                       {moduleItem.title}
                     </h2>
                   </div>
@@ -154,36 +324,47 @@ export default function Workspace({ initialCourse }: WorkspaceProps) {
                 </div>
                 <div className="space-y-5">
                   {moduleItem.lessons.map((lessonItem) => (
-                    <LessonCanvas
+                    <div
                       key={lessonItem.id}
-                      id={lessonItem.id}
-                      title={
-                        lessonAttributeEdits[lessonItem.id]?.title ??
-                        lessonItem.title
-                      }
-                      duration={
-                        lessonAttributeEdits[lessonItem.id]?.duration ??
-                        lessonItem.duration
-                      }
-                      objective={
-                        lessonAttributeEdits[lessonItem.id]?.objective ??
-                        lessonItem.objective
-                      }
-                      blocks={lessonItem.blocks}
-                      selectedBlockId={selectedBlockId}
-                      onBlockClick={(block) => {
-                        setSelectedBlockId(block.id);
+                      className="rounded-4xl"
+                      onClick={() => {
+                        selectLesson(moduleItem.id, lessonItem.id);
                       }}
-                      onLessonAttributesChange={(values) => {
-                        setLessonAttributeEdits((current) => ({
-                          ...current,
-                          [lessonItem.id]: {
-                            ...current[lessonItem.id],
-                            ...values,
-                          },
-                        }));
-                      }}
-                    />
+                    >
+                      <LessonCanvas
+                        id={lessonItem.id}
+                        isSelected={selectedLessonId === lessonItem.id}
+                        title={
+                          lessonAttributeEdits[lessonItem.id]?.title ??
+                          lessonItem.title
+                        }
+                        duration={
+                          lessonAttributeEdits[lessonItem.id]?.duration ??
+                          lessonItem.duration
+                        }
+                        objective={
+                          lessonAttributeEdits[lessonItem.id]?.objective ??
+                          lessonItem.objective
+                        }
+                        blocks={lessonItem.blocks}
+                        selectedBlockId={selectedBlockId}
+                        onCanvasClick={() => {
+                          selectLesson(moduleItem.id, lessonItem.id);
+                        }}
+                        onBlockClick={(block) => {
+                          selectBlock(moduleItem.id, lessonItem.id, block.id);
+                        }}
+                        onLessonAttributesChange={(values) => {
+                          setLessonAttributeEdits((current) => ({
+                            ...current,
+                            [lessonItem.id]: {
+                              ...current[lessonItem.id],
+                              ...values,
+                            },
+                          }));
+                        }}
+                      />
+                    </div>
                   ))}
                 </div>
               </section>
@@ -200,6 +381,21 @@ export default function Workspace({ initialCourse }: WorkspaceProps) {
             </div>
 
             <div className="mt-5 border-t border-slate-200/80 pt-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600">
+                <p className="font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Current Selection
+                </p>
+                <p className="mt-2 truncate">
+                  Module: {selectedModule?.title ?? "None"}
+                </p>
+                <p className="mt-1 truncate">
+                  Lesson: {selectedLesson?.title ?? "None"}
+                </p>
+                <p className="mt-1 truncate">
+                  Block: {selectedBlock?.title ?? "None"}
+                </p>
+              </div>
+
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
                 Block Detail
               </p>
