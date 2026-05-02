@@ -1,5 +1,6 @@
 import { fetchCourseBySlug } from "@/app/actions/courses";
-import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/story-board-builder";
+import { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
+
 import Workspace from "@/components/storyboard/workspace/Workspace";
 
 type StoryboardPageProps = {
