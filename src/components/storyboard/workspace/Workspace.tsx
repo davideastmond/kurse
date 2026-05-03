@@ -72,6 +72,9 @@ export default function Workspace({
   const latestSavedVersionRef = useRef<number>(initialCourse.version);
   const pendingSaveRef = useRef<ApiCoursePayload | null>(null);
   const isSavingRef = useRef(false);
+  // Set to true after a VERSION_CONFLICT error. Prevents further autosaves
+  // (which would all fail with the same stale expectedVersion) until the user
+  // reloads the page to re-sync with the server copy.
   const saveBlockedRef = useRef(false);
 
   const persistLatestCourse = useCallback(async () => {
