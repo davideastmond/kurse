@@ -73,6 +73,7 @@ export async function fetchCourseBySlug(slug: string) {
 export async function saveCourseStoryboard(
   input: SaveCourseStoryboardInput,
 ): Promise<SaveCourseStoryboardResult> {
+  // TODO: validation and security checks (e.g. ensure user has permission to edit this course)
   if (!Number.isInteger(input.expectedVersion) || input.expectedVersion < 1) {
     return {
       ok: false,
