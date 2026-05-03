@@ -1,4 +1,4 @@
-import type { CourseStatus } from "@/shared/types/storyboard";
+import type { CourseStatus, StoryboardBlockType } from "@/shared/types/storyboard";
 import {
   ApiCoursePayload,
   BuilderResult,
@@ -16,6 +16,16 @@ function isNonEmptyString(value: unknown): value is string {
 
 function isKnownStatus(value: unknown): value is CourseStatus {
   return value === "DRAFT" || value === "PUBLISHED" || value === "ARCHIVED";
+}
+
+function isKnownBlockType(value: unknown): value is StoryboardBlockType {
+  return (
+    value === "video" ||
+    value === "richtext" ||
+    value === "image" ||
+    value === "quiz_inline" ||
+    value === "audio"
+  );
 }
 
 function cloneJsonValue<T>(value: T): T {
@@ -161,6 +171,13 @@ function validatePayload(
 
         if (!isNonEmptyString(blockItem.title)) {
           pushInvalidField(`${blockPath}.title`, "block title is required.");
+        }
+
+        if (!isKnownBlockType(blockItem.type)) {
+          pushInvalidField(
+            `${blockPath}.type`,
+            "block type must be one of: video, richtext, image, quiz_inline, audio.",
+          );
         }
 
         if (!isNonEmptyString(blockItem.detail)) {
