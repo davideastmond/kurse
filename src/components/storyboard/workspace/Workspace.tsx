@@ -7,7 +7,10 @@ import BlockDetailRenderer from "@/components/storyboard/blocks/Block-detail-ren
 import type { LessonCanvasEditableValues } from "@/components/storyboard/lesson-canvas/Lesson-canvas";
 import ModuleSection from "@/components/storyboard/module-section/Module-section";
 import ToolBar from "@/components/storyboard/toolbar/ToolBar";
-import type { StoryboardBlockType } from "@/shared/types/storyboard";
+import type {
+  StoryboardBlock,
+  StoryboardBlockType,
+} from "@/shared/types/storyboard";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 type WorkspaceProps = {
@@ -334,6 +337,54 @@ export default function Workspace({
     [applyCourseMutation],
   );
 
+  const handleUpdateBlock = useCallback(
+    (
+      moduleId: string,
+      lessonId: string,
+      blockId: string,
+      patch: Partial<StoryboardBlock>,
+    ) => {
+      applyCourseMutation((current) => {
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            lessons: moduleItem.lessons.map((lessonItem) => {
+              if (lessonItem.id !== lessonId) {
+                return lessonItem;
+              }
+
+              return {
+                ...lessonItem,
+                blocks: lessonItem.blocks.map((blockItem) => {
+                  if (blockItem.id !== blockId) {
+                    return blockItem;
+                  }
+
+                  return {
+                    ...blockItem,
+                    ...patch,
+                  };
+                }),
+              };
+            }),
+          };
+        });
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
   const handleAddModule = useCallback(() => {
     applyCourseMutation((current) => {
       const nextModuleId = createEntityId("module");
@@ -598,7 +649,12 @@ export default function Workspace({
               <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
                 Block Detail
               </p>
-              <BlockDetailRenderer block={selectedBlock} />
+              <BlockDetailRenderer
+                block={selectedBlock}
+                onUpdateBlock={handleUpdateBlock}
+                moduleId={selectedModuleId}
+                lessonId={selectedLessonId}
+              />
             </div>
           </aside>
         </div>
