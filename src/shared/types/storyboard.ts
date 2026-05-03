@@ -1,11 +1,14 @@
 export type CourseStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
-export type StoryboardBlockType =
-  | "video"
-  | "richtext"
-  | "image"
-  | "quiz_inline"
-  | "audio";
+export const BLOCK_TYPES = [
+  "video",
+  "richtext",
+  "image",
+  "quiz_inline",
+  "audio",
+] as const;
+
+export type StoryboardBlockType = (typeof BLOCK_TYPES)[number];
 
 export type StoryboardBlock = {
   id: string;
