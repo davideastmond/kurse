@@ -1,5 +1,4 @@
 import { loadEnvConfig } from "@next/env";
-import { reset } from "drizzle-seed";
 
 import { getDb } from "../../index";
 import * as schema from "../../schema";
@@ -18,10 +17,7 @@ async function seedCourses() {
     );
   }
 
-  console.log("Resetting database tables...");
-  await reset(db, schema);
-
-  console.log("Creating admin user...");
+  console.log("Upserting admin user and courses...");
   await db
     .insert(schema.users)
     .values({
