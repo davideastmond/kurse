@@ -9,6 +9,9 @@ import VideoBlockDetail from "@/components/storyboard/blocks/Video-block-detail"
 
 export default function BlockDetailRenderer({
   block,
+  onUpdateBlock,
+  moduleId,
+  lessonId,
 }: BlockDetailRendererProps) {
   if (!block) {
     return (
@@ -19,20 +22,55 @@ export default function BlockDetailRenderer({
   }
 
   if (block.type === "video") {
-    return <VideoBlockDetail block={block} />;
+    return (
+      <VideoBlockDetail
+        block={block}
+        onUpdateBlock={onUpdateBlock}
+        moduleId={moduleId}
+        lessonId={lessonId}
+      />
+    );
   }
 
   if (block.type === "richtext") {
-    return <RichtextBlockDetail block={block} />;
+    return (
+      <RichtextBlockDetail
+        block={block}
+        onUpdateBlock={onUpdateBlock}
+        moduleId={moduleId}
+        lessonId={lessonId}
+      />
+    );
   }
 
   if (block.type === "image") {
-    return <ImageBlockDetail block={block} />;
+    return (
+      <ImageBlockDetail
+        block={block}
+        onUpdateBlock={onUpdateBlock}
+        moduleId={moduleId}
+        lessonId={lessonId}
+      />
+    );
   }
 
   if (block.type === "audio") {
-    return <AudioBlockDetail block={block} />;
+    return (
+      <AudioBlockDetail
+        block={block}
+        onUpdateBlock={onUpdateBlock}
+        moduleId={moduleId}
+        lessonId={lessonId}
+      />
+    );
   }
 
-  return <QuizInlineBlockDetail block={block} />;
+  return (
+    <QuizInlineBlockDetail
+      block={block}
+      onUpdateBlock={onUpdateBlock}
+      moduleId={moduleId}
+      lessonId={lessonId}
+    />
+  );
 }
