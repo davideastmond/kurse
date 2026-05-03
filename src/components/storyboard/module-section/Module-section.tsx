@@ -35,13 +35,16 @@ export default function ModuleSection({
               </span>
             ) : null}
           </p>
-          <h2
-            className="cursor-pointer text-2xl font-semibold tracking-tight text-slate-900 transition-colors hover:text-sky-700"
-            onClick={() => {
-              onSelectModule(moduleItem.id);
-            }}
-          >
-            {moduleItem.title}
+          <h2 className="cursor-pointer text-2xl font-semibold tracking-tight text-slate-900 transition-colors hover:text-sky-700">
+            <button
+              type="button"
+              className="cursor-pointer text-left transition-colors hover:text-sky-700"
+              onClick={() => {
+                onSelectModule(moduleItem.id);
+              }}
+            >
+              {moduleItem.title}
+            </button>
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.16em] text-slate-500">
