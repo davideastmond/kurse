@@ -50,7 +50,16 @@ function toPersistedStructure(
 
 export async function fetchSeededCourses() {
   const db = getDb();
-  return db?.select().from(courses);
+  return db
+    ?.select({
+      id: courses.id,
+      slug: courses.slug,
+      description: courses.description,
+      status: courses.status,
+      version: courses.version,
+      updatedAt: courses.updatedAt,
+    })
+    .from(courses);
 }
 
 export async function fetchCourseBySlug(slug: string) {
