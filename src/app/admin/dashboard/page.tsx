@@ -2,9 +2,8 @@ import Link from "next/link";
 
 import { fetchSeededCourses } from "@/app/actions/courses";
 
-import StoryboardSummaryCard, {
-  type DashboardCourse,
-} from "@/components/storyboard-summary-card/Storyboard-summary-card";
+import { DashboardCourse } from "@/components/storyboard-summary-card/definitions";
+import StoryboardSummaryCard from "@/components/storyboard-summary-card/Storyboard-summary-card";
 import { CourseStatus } from "@/shared/types/storyboard";
 
 type SortOption = "updatedAt_desc" | "createdAt_desc" | "title_asc";
