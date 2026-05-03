@@ -72,6 +72,7 @@ export default function Workspace({
   const latestSavedVersionRef = useRef<number>(initialCourse.version);
   const pendingSaveRef = useRef<ApiCoursePayload | null>(null);
   const isSavingRef = useRef(false);
+  const saveBlockedRef = useRef(false);
 
   const persistLatestCourse = useCallback(async () => {
     if (isSavingRef.current) {
@@ -115,10 +116,13 @@ export default function Workspace({
 
         setSaveState({ status: "idle" });
       } else {
+        pendingSaveRef.current = null;
+        saveBlockedRef.current = true;
         setSaveState({
           status: "error",
           message: result.message,
         });
+        break;
       }
     }
 
@@ -127,6 +131,10 @@ export default function Workspace({
 
   const queueSave = useCallback(
     (nextCourse: ApiCoursePayload) => {
+      if (saveBlockedRef.current) {
+        return;
+      }
+
       pendingSaveRef.current = nextCourse;
       void persistLatestCourse();
     },
