@@ -2,6 +2,7 @@
 
 import LessonCanvas from "@/components/storyboard/lesson-canvas/Lesson-canvas";
 import type { ModuleSectionProps } from "@/components/storyboard/module-section/definitions";
+import { useState } from "react";
 
 export default function ModuleSection({
   moduleItem,
@@ -12,10 +13,29 @@ export default function ModuleSection({
   onSelectLesson,
   onSelectBlock,
   onLessonAttributesChange,
+  onModuleTitleChange,
   onAddLesson,
   onAddBlock,
 }: ModuleSectionProps) {
   const isModuleSelected = selectedModuleId === moduleItem.id;
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+
+  const commitTitleChange = () => {
+    const nextTitle = draftTitle.trim();
+
+    if (!nextTitle) {
+      setDraftTitle(moduleItem.title);
+      setIsEditingTitle(false);
+      return;
+    }
+
+    if (nextTitle !== moduleItem.title) {
+      onModuleTitleChange(moduleItem.id, nextTitle);
+    }
+
+    setIsEditingTitle(false);
+  };
 
   return (
     <section
@@ -35,17 +55,55 @@ export default function ModuleSection({
               </span>
             ) : null}
           </p>
-          <h2 className="cursor-pointer text-2xl font-semibold tracking-tight text-slate-900 transition-colors hover:text-sky-700">
-            <button
-              type="button"
-              className="cursor-pointer text-left transition-colors hover:text-sky-700"
-              onClick={() => {
-                onSelectModule(moduleItem.id);
-              }}
-            >
-              {moduleItem.title}
-            </button>
-          </h2>
+          {isEditingTitle ? (
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                value={draftTitle}
+                onChange={(event) => {
+                  setDraftTitle(event.target.value);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    commitTitleChange();
+                  }
+
+                  if (event.key === "Escape") {
+                    setDraftTitle(moduleItem.title);
+                    setIsEditingTitle(false);
+                  }
+                }}
+                onBlur={commitTitleChange}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-lg font-semibold tracking-tight text-slate-900 outline-none ring-sky-200 transition focus:border-sky-400 focus:ring"
+                aria-label="Module title"
+                autoFocus
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h2 className="cursor-pointer text-2xl font-semibold tracking-tight text-slate-900 transition-colors hover:text-sky-700">
+                <button
+                  type="button"
+                  className="cursor-pointer text-left transition-colors hover:text-sky-700"
+                  onClick={() => {
+                    onSelectModule(moduleItem.id);
+                  }}
+                >
+                  {moduleItem.title}
+                </button>
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectModule(moduleItem.id);
+                  setDraftTitle(moduleItem.title);
+                  setIsEditingTitle(true);
+                }}
+                className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                Rename
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.16em] text-slate-500">
           {moduleItem.progressLabel ? (
