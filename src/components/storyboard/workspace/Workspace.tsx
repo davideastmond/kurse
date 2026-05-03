@@ -117,7 +117,15 @@ export default function Workspace({
         setSaveState({ status: "idle" });
       } else {
         pendingSaveRef.current = null;
-        saveBlockedRef.current = true;
+
+        if (result.code === "VERSION_CONFLICT") {
+          // A version conflict means the server copy has diverged from what
+          // the client expects. Permanently block further autosaves so we
+          // don't keep hammering the server with the stale expectedVersion.
+          // The user must reload the page to resume editing.
+          saveBlockedRef.current = true;
+        }
+
         setSaveState({
           status: "error",
           message: result.message,
