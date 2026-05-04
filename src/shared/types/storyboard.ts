@@ -16,6 +16,7 @@ export type StoryboardBlock = {
   title: string;
   detail: string;
   duration: string;
+  imageUrl?: string;
 };
 
 export type StoryboardLesson = {
