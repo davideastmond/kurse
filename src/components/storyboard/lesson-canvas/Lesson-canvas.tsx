@@ -1,7 +1,7 @@
 "use client";
 
 import { type StoryboardBlock } from "@/shared/types/storyboard";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type LessonCanvasBlock = StoryboardBlock;
 
@@ -62,6 +62,7 @@ export default function LessonCanvas({
   onDeleteBlocks,
   className,
 }: LessonCanvasProps) {
+  const sectionRef = useRef<HTMLElement | null>(null);
   const [editingField, setEditingField] =
     useState<LessonCanvasEditableField | null>(null);
   const [draftValue, setDraftValue] = useState("");
@@ -90,17 +91,19 @@ export default function LessonCanvas({
     setSelectedBlockIds([]);
   };
 
-  const saveEdit = () => {
+  const saveEdit = (options?: { closeBatchAfterTitle?: boolean }) => {
     if (!editingField || !onLessonAttributesChange) {
       return;
     }
 
     const normalizedValue = draftValue.trim();
     const isTitleEdit = editingField === "title";
+    const shouldCloseBatchAfterTitle =
+      options?.closeBatchAfterTitle ?? isBatchEditing;
 
     if (isTitleEdit) {
       if (!normalizedValue) {
-        if (isBatchEditing) {
+        if (isBatchEditing && shouldCloseBatchAfterTitle) {
           stopBatchEditing();
         } else {
           stopEditing();
@@ -109,7 +112,7 @@ export default function LessonCanvas({
       }
 
       onLessonAttributesChange({ title: normalizedValue });
-      if (isBatchEditing) {
+      if (isBatchEditing && shouldCloseBatchAfterTitle) {
         stopBatchEditing();
       } else {
         stopEditing();
@@ -176,6 +179,7 @@ export default function LessonCanvas({
 
   return (
     <section
+      ref={sectionRef}
       id={id}
       className={canvasClassName}
       onClick={() => {
@@ -194,7 +198,14 @@ export default function LessonCanvas({
               onChange={(event) => {
                 setDraftValue(event.target.value);
               }}
-              onBlur={saveEdit}
+              onBlur={(event) => {
+                const nextFocusTarget = event.relatedTarget;
+                const isStillInsideCanvas =
+                  !!nextFocusTarget &&
+                  !!sectionRef.current?.contains(nextFocusTarget);
+
+                saveEdit({ closeBatchAfterTitle: !isStillInsideCanvas });
+              }}
               onKeyDown={handleEditorKeyDown}
               className="w-full max-w-3xl rounded-xl border border-brand-300 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-slate-950 outline-none ring-brand-500 focus:ring-2"
               aria-label="Edit lesson title"

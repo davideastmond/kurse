@@ -763,6 +763,20 @@ export default function Workspace({
                 moduleId={selectedModuleId}
                 lessonId={selectedLessonId}
               />
+
+              {selectedBlock && selectedModuleId && selectedLessonId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDeleteBlocks(selectedModuleId, selectedLessonId, [
+                      selectedBlock.id,
+                    ]);
+                  }}
+                  className="mt-4 w-full rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-rose-700 transition-colors hover:bg-rose-100"
+                >
+                  Delete Highlighted Block
+                </button>
+              ) : null}
             </div>
           </aside>
         </div>

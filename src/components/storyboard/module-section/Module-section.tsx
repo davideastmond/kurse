@@ -142,6 +142,7 @@ export default function ModuleSection({
               }}
             >
               <LessonCanvas
+                key={`${lessonItem.id}-${isLessonSelected ? "active" : "inactive"}`}
                 id={lessonItem.id}
                 isSelected={isLessonSelected}
                 title={lessonItem.title}
