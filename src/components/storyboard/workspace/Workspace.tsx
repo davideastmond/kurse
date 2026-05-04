@@ -587,6 +587,54 @@ export default function Workspace({
     ],
   );
 
+  const handleDeleteBlocks = useCallback(
+    (moduleId: string, lessonId: string, blockIds: string[]) => {
+      if (blockIds.length === 0) {
+        return;
+      }
+
+      const blockIdSet = new Set(blockIds);
+
+      applyCourseMutation((current) => {
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            lessons: moduleItem.lessons.map((lessonItem) => {
+              if (lessonItem.id !== lessonId) {
+                return lessonItem;
+              }
+
+              return {
+                ...lessonItem,
+                // Filter preserves the relative order of remaining blocks.
+                blocks: lessonItem.blocks.filter(
+                  (blockItem) => !blockIdSet.has(blockItem.id),
+                ),
+              };
+            }),
+          };
+        });
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+          nextSelection: {
+            type: "LESSON",
+            moduleId,
+            lessonId,
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
   if (!builderResult.ok || !renderModel) {
     return (
       <div className="min-h-screen bg-slate-50 p-6">
@@ -657,6 +705,7 @@ export default function Workspace({
                 onLessonAttributesChange={handleLessonAttributesChange}
                 onAddLesson={handleAddLesson}
                 onAddBlock={addBlockToLesson}
+                onDeleteBlocks={handleDeleteBlocks}
               />
             ))}
           </div>
