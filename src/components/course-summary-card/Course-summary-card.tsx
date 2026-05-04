@@ -16,7 +16,6 @@ type CourseSummaryCardProps = {
 };
 
 export default function CourseSummaryCard({ course }: CourseSummaryCardProps) {
-  console.log("Rendering CourseSummaryCard for course:", course);
   return (
     <Link
       href={`/admin/storyboard/${course.slug}`}
