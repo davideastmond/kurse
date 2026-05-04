@@ -1,4 +1,7 @@
-import type { CourseStatus, StoryboardBlockType } from "@/shared/types/storyboard";
+import type {
+  CourseStatus,
+  StoryboardBlockType,
+} from "@/shared/types/storyboard";
 import { BLOCK_TYPES } from "@/shared/types/storyboard";
 import {
   ApiCoursePayload,
@@ -245,6 +248,7 @@ function buildStructureFromPayload(
           title: blockItem.title,
           detail: blockItem.detail,
           duration: blockItem.duration,
+          imageUrl: blockItem.imageUrl,
         };
       }
     }
@@ -285,6 +289,7 @@ function buildApiPayloadFromStructure(
                     title: blockEntity.title,
                     detail: blockEntity.detail,
                     duration: blockEntity.duration,
+                    imageUrl: blockEntity.imageUrl,
                   };
                 },
               ),

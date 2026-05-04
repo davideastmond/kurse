@@ -45,6 +45,7 @@ type PersistedBlock = {
   title: string;
   detail: string;
   duration: string;
+  imageUrl?: string;
 };
 
 export type ApiBlock = StoryboardBlock;
