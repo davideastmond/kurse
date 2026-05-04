@@ -248,7 +248,10 @@ function buildStructureFromPayload(
           title: blockItem.title,
           detail: blockItem.detail,
           duration: blockItem.duration,
+          videoUrl: blockItem.videoUrl,
           imageUrl: blockItem.imageUrl,
+          audioUrl: blockItem.audioUrl,
+          quiz: blockItem.quiz,
         };
       }
     }
@@ -289,7 +292,10 @@ function buildApiPayloadFromStructure(
                     title: blockEntity.title,
                     detail: blockEntity.detail,
                     duration: blockEntity.duration,
+                    videoUrl: blockEntity.videoUrl,
                     imageUrl: blockEntity.imageUrl,
+                    audioUrl: blockEntity.audioUrl,
+                    quiz: blockEntity.quiz,
                   };
                 },
               ),

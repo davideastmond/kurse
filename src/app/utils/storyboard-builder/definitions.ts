@@ -5,6 +5,7 @@ import {
   StoryboardCoursePayload,
   StoryboardLesson,
   StoryboardModule,
+  StoryboardQuiz,
 } from "@/shared/types/storyboard";
 
 export type {
@@ -45,7 +46,10 @@ type PersistedBlock = {
   title: string;
   detail: string;
   duration: string;
+  videoUrl?: string;
   imageUrl?: string;
+  audioUrl?: string;
+  quiz?: StoryboardQuiz;
 };
 
 export type ApiBlock = StoryboardBlock;
