@@ -16,6 +16,7 @@ export default function ModuleSection({
   onModuleTitleChange,
   onAddLesson,
   onAddBlock,
+  onDeleteBlocks,
 }: ModuleSectionProps) {
   const isModuleSelected = selectedModuleId === moduleItem.id;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -156,6 +157,9 @@ export default function ModuleSection({
                 }}
                 onLessonAttributesChange={(values) => {
                   onLessonAttributesChange(lessonItem.id, values);
+                }}
+                onDeleteBlocks={(blockIds) => {
+                  onDeleteBlocks(moduleItem.id, lessonItem.id, blockIds);
                 }}
               />
 

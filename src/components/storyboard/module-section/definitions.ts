@@ -21,4 +21,9 @@ export type ModuleSectionProps = {
     lessonId: string,
     blockType: StoryboardBlockType,
   ) => void;
+  onDeleteBlocks: (
+    moduleId: string,
+    lessonId: string,
+    blockIds: string[],
+  ) => void;
 };
