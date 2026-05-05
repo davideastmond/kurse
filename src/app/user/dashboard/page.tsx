@@ -1,4 +1,4 @@
-import { getDashboardPathForEmail } from "@/auth/dashboard";
+import { getDashboardPathForRole } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
 import { getDb } from "@/db";
 import { courses, enrollments } from "@/db/schema";
@@ -36,7 +36,7 @@ export default async function UserDashboardPage({
     redirect("/auth/signin");
   }
 
-  const dashboardPath = await getDashboardPathForEmail(session.user.email);
+  const dashboardPath = getDashboardPathForRole(session.user.role);
   if (dashboardPath !== "/user/dashboard") {
     redirect(dashboardPath);
   }

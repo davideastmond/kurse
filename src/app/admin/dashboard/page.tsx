@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { fetchSeededCourses } from "@/app/actions/courses";
-import { getDashboardPathForEmail } from "@/auth/dashboard";
+import { getDashboardPathForRole } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
 
 import NewCourseButton from "@/components/admin/new-course/New-course-button";
@@ -142,7 +142,7 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
     redirect("/auth/signin");
   }
 
-  const dashboardPath = await getDashboardPathForEmail(session.user.email);
+  const dashboardPath = getDashboardPathForRole(session.user.role);
   if (dashboardPath !== "/admin/dashboard") {
     redirect(dashboardPath);
   }

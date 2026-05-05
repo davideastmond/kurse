@@ -1,4 +1,4 @@
-import { getDashboardPathForEmail } from "@/auth/dashboard";
+import { getDashboardPathForRole } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
 import EnrollmentManager from "@/components/admin/enrollments/Enrollment-manager";
 import { getDb } from "@/db";
@@ -24,7 +24,7 @@ export default async function EnrollmentsPage({
     redirect("/auth/signin");
   }
 
-  const dashboardPath = await getDashboardPathForEmail(session.user.email);
+  const dashboardPath = getDashboardPathForRole(session.user.role);
   if (dashboardPath !== "/admin/dashboard") {
     redirect(dashboardPath);
   }
