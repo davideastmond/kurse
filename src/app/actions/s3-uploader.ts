@@ -20,6 +20,14 @@ const MAGIC_SIGNATURES: readonly number[][] = [
   [0x52, 0x49, 0x46, 0x46],       // RIFF container (WAV, AVI, WebP)
 ];
 
+/**
+ * Validates that the first 12 bytes of a file match a known media type
+ * signature. Most signatures are checked at offset 0; MP4/MOV/M4A/M4V are
+ * identified by the "ftyp" atom at offset 4.
+ *
+ * @param header - At least 12 bytes read from the start of the file.
+ * @returns `true` when the header matches a recognised media format.
+ */
 function hasAllowedMagicBytes(header: Uint8Array): boolean {
   for (const sig of MAGIC_SIGNATURES) {
     if (sig.every((byte, i) => header[i] === byte)) return true;
@@ -66,6 +74,9 @@ export async function uploadToS3(
   }
 
   // Read just the first 12 bytes to validate magic bytes before touching S3.
+  if (file.size < 12) {
+    return { error: "File is too small to validate." };
+  }
   const headerBuffer = new Uint8Array(await file.slice(0, 12).arrayBuffer());
   if (!hasAllowedMagicBytes(headerBuffer)) {
     return { error: "File content does not match an allowed media type." };
