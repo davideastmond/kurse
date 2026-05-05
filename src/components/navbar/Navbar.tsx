@@ -38,12 +38,20 @@ export default async function Navbar() {
             </Link>
 
             {role === "ADMIN" ? (
-              <Link
-                href="/admin/dashboard"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-              >
-                Admin
-              </Link>
+              <>
+                <Link
+                  href="/admin/dashboard"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                >
+                  Admin
+                </Link>
+                <Link
+                  href="/admin/enrollments"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                >
+                  Enrollments
+                </Link>
+              </>
             ) : null}
 
             {role === "STUDENT" ? (
