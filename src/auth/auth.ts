@@ -81,6 +81,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return token;
       }
 
+      // Only query the DB on initial sign-in when role/id are not yet in the token.
+      if (token.role && token.id) {
+        return token;
+      }
+
       const db = getDb();
       if (!db) {
         return token;
