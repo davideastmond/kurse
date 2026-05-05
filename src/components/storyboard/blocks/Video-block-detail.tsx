@@ -65,6 +65,7 @@ export default function VideoBlockDetail({
       return;
     }
 
+    const trimmedTitle = title.trim() || block.title;
     const trimmedUrl = videoUrlDraft.trim();
 
     if (trimmedUrl) {
@@ -77,7 +78,7 @@ export default function VideoBlockDetail({
     }
 
     onUpdateBlock(moduleId, lessonId, block.id, {
-      title: title || block.title,
+      title: trimmedTitle,
       videoUrl: trimmedUrl || undefined,
     });
 
