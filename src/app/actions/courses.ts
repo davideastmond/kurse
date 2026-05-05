@@ -58,6 +58,7 @@ export async function fetchSeededCourses() {
       status: courses.status,
       version: courses.version,
       updatedAt: courses.updatedAt,
+      title: courses.title,
     })
     .from(courses);
 }
