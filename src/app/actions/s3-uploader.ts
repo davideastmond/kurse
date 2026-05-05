@@ -1,6 +1,10 @@
 "use server";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+const ALLOWED_CONTENT_TYPE_PREFIXES = ["video/", "image/", "audio/"];
+
 function sanitizeFileName(fileName: string) {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
@@ -21,6 +25,17 @@ export async function uploadToS3(
 
   if (!(file instanceof File) || file.size === 0) {
     return { error: "No valid file provided" };
+  }
+
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return { error: "File exceeds maximum allowed size of 10 MB" };
+  }
+
+  const isAllowedType = ALLOWED_CONTENT_TYPE_PREFIXES.some((prefix) =>
+    file.type.startsWith(prefix),
+  );
+  if (!isAllowedType) {
+    return { error: "File type not allowed. Only video, image, and audio files are accepted." };
   }
 
   const endpoint = process.env.CLOUD_FLARE_S3_ENDPOINT;
