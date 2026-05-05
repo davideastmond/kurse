@@ -54,7 +54,7 @@ export default function RootLayout({
             <ThemeToggle />
           </div>
         </div>
-        {children}
+        <div className="mt-6">{children}</div>
       </body>
     </html>
   );
