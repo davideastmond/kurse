@@ -229,7 +229,7 @@ export default function LessonCanvas({
               onChange={(event) => {
                 setDraftValue(event.target.value);
               }}
-              onBlur={saveEdit}
+              onBlur={() => saveEdit()}
               onKeyDown={handleEditorKeyDown}
               rows={3}
               className="w-full max-w-3xl rounded-xl border border-brand-300 bg-white px-3 py-2 text-sm leading-6 text-slate-700 outline-none ring-brand-500 focus:ring-2"
@@ -254,7 +254,7 @@ export default function LessonCanvas({
             onChange={(event) => {
               setDraftValue(event.target.value);
             }}
-            onBlur={saveEdit}
+            onBlur={() => saveEdit()}
             onKeyDown={handleEditorKeyDown}
             className="w-36 rounded-full border border-brand-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 outline-none ring-brand-500 focus:ring-2"
             aria-label="Edit lesson duration"
