@@ -47,7 +47,10 @@ export async function uploadToS3(
     );
 
     // For r2.dev public URLs, the domain is already bucket-scoped.
-    const publicBaseUrl = process.env.CLOUD_FLARE_PUBLIC_ACCESS_DEV_URL;
+    const publicBaseUrl =
+      process.env.NODE_ENV === "production"
+        ? process.env.CLOUD_FLARE_PUBLIC_ACCESS_PROD_URL
+        : process.env.CLOUD_FLARE_PUBLIC_ACCESS_DEV_URL;
     const s3Endpoint = process.env.CLOUD_FLARE_S3_ENDPOINT;
 
     if (!publicBaseUrl && !s3Endpoint) {
