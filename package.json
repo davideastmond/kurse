@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed-courses": "tsx src/db/seed/courses/seed.ts"
+    "seed-courses": "tsx src/db/seed/courses/seed.ts",
+    "verify-course-trigger": "tsx src/db/seed/courses/verify-trigger.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1041.0",
@@ -15,8 +16,10 @@
     "drizzle-orm": "^0.45.2",
     "drizzle-seed": "^0.3.1",
     "next": "16.2.4",
+    "next-auth": "^5.0.0-beta.31",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

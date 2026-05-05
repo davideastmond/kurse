@@ -1,10 +1,14 @@
 import Link from "next/link";
 
 import { fetchSeededCourses } from "@/app/actions/courses";
+import { getDashboardPathForRole } from "@/auth/dashboard";
+import { getSessionSafely } from "@/auth/session";
 
+import NewCourseButton from "@/components/admin/new-course/New-course-button";
 import CourseSummaryCard from "@/components/course-summary-card/Course-summary-card";
 import { DashboardCourse } from "@/components/course-summary-card/definitions";
 import { CourseStatus } from "@/shared/types/storyboard";
+import { redirect } from "next/navigation";
 
 type SortOption = "updatedAt_desc" | "createdAt_desc" | "title_asc";
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -124,7 +128,7 @@ function mapSeededCourseToDashboardCourse(
     createdAt: toIsoString(course.createdAt),
     updatedAt: toIsoString(course.updatedAt),
     enrolledCount: 0,
-    coverAccent: "from-sky-200 via-cyan-50 to-white",
+    coverAccent: "from-brand-200/55 via-brand-100/35 to-surface",
     synopsis: metadata.synopsis ?? course.description,
     audience: metadata.audience ?? "",
     estimatedDuration: metadata.estimatedDuration ?? "",
@@ -133,6 +137,16 @@ function mapSeededCourseToDashboardCourse(
 }
 
 export default async function Dashboard({ searchParams }: DashboardPageProps) {
+  const session = await getSessionSafely();
+  if (!session?.user?.email) {
+    redirect("/auth/signin");
+  }
+
+  const dashboardPath = getDashboardPathForRole(session.user.role);
+  if (dashboardPath !== "/admin/dashboard") {
+    redirect(dashboardPath);
+  }
+
   const resolvedSearchParams = ((await searchParams) ?? {}) as SearchParams;
   getPageSize(getStringParam(resolvedSearchParams.pageSize));
   const query =
@@ -180,8 +194,10 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
     });
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(21,94,239,0.12),transparent_40%),linear-gradient(180deg,var(--background),#eef4ff)] px-6 py-10 text-foreground md:px-10">
+    <main className="min-h-screen bg-background px-6 py-10 text-foreground md:px-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+        <NewCourseButton />
+
         {filteredCourses.length > 0 ? (
           <section className="grid gap-4 md:grid-cols-[minmax(0,2fr)_repeat(2,minmax(0,1fr))]">
             {filteredCourses.map((course) => (
