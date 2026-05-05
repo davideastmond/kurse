@@ -7,6 +7,7 @@ import BlockDetailRenderer from "@/components/storyboard/blocks/Block-detail-ren
 import type { LessonCanvasEditableValues } from "@/components/storyboard/lesson-canvas/Lesson-canvas";
 import ModuleSection from "@/components/storyboard/module-section/Module-section";
 import ToolBar from "@/components/storyboard/toolbar/ToolBar";
+import { courseStatusEnum } from "@/db/schema";
 import type {
   StoryboardBlock,
   StoryboardBlockType,
@@ -39,6 +40,8 @@ const DEFAULT_BLOCK_TITLE: Record<StoryboardBlockType, string> = {
   quiz_inline: "New Quiz",
   audio: "New Audio",
 };
+
+const COURSE_STATUS_OPTIONS = courseStatusEnum.enumValues;
 
 function createEntityId(prefix: "module" | "lesson" | "block") {
   const randomPart =
@@ -635,6 +638,18 @@ export default function Workspace({
     [applyCourseMutation],
   );
 
+  const handleCourseStatusChange = useCallback(
+    (nextStatus: ApiCoursePayload["status"]) => {
+      applyCourseMutation((current) => ({
+        nextCourse: {
+          ...current,
+          status: nextStatus,
+        },
+      }));
+    },
+    [applyCourseMutation],
+  );
+
   if (!builderResult.ok || !renderModel) {
     return (
       <div className="min-h-screen bg-muted p-6">
@@ -676,6 +691,33 @@ export default function Workspace({
               </p>
             </div>
             <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+              <label className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Status
+                <select
+                  value={workingCourse.status}
+                  onChange={(event) => {
+                    const nextStatus = event.target
+                      .value as ApiCoursePayload["status"];
+
+                    if (
+                      COURSE_STATUS_OPTIONS.includes(
+                        nextStatus as (typeof COURSE_STATUS_OPTIONS)[number],
+                      )
+                    ) {
+                      handleCourseStatusChange(nextStatus);
+                    }
+                  }}
+                  className="rounded-md border border-border bg-surface px-2 py-1 text-xs font-semibold text-foreground outline-none ring-primary focus:ring-1"
+                  aria-label="Course status"
+                >
+                  {COURSE_STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <span className="rounded-full border border-border bg-surface px-4 py-2 font-medium">
                 {renderModel.modules.length} modules
               </span>
