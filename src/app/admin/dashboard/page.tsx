@@ -4,6 +4,7 @@ import { fetchSeededCourses } from "@/app/actions/courses";
 import { getDashboardPathForEmail } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
 
+import NewCourseButton from "@/components/admin/new-course/New-course-button";
 import CourseSummaryCard from "@/components/course-summary-card/Course-summary-card";
 import { DashboardCourse } from "@/components/course-summary-card/definitions";
 import { CourseStatus } from "@/shared/types/storyboard";
@@ -195,6 +196,8 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
   return (
     <main className="min-h-screen bg-background px-6 py-10 text-foreground md:px-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+        <NewCourseButton />
+
         {filteredCourses.length > 0 ? (
           <section className="grid gap-4 md:grid-cols-[minmax(0,2fr)_repeat(2,minmax(0,1fr))]">
             {filteredCourses.map((course) => (

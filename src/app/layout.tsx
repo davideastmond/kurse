@@ -1,4 +1,4 @@
-import ThemeToggle from "@/components/theme-toggle/Theme-toggle";
+import Navbar from "@/components/navbar/Navbar";
 import type { Metadata } from "next";
 import { JetBrains_Mono, Manrope } from "next/font/google";
 import Script from "next/script";
@@ -49,12 +49,8 @@ export default function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
-        <div className="pointer-events-none fixed top-4 right-4 z-50">
-          <div className="pointer-events-auto">
-            <ThemeToggle />
-          </div>
-        </div>
-        <div className="mt-6">{children}</div>
+        <Navbar />
+        <div>{children}</div>
       </body>
     </html>
   );
