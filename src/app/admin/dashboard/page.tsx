@@ -1,10 +1,13 @@
 import Link from "next/link";
 
 import { fetchSeededCourses } from "@/app/actions/courses";
+import { getDashboardPathForEmail } from "@/auth/dashboard";
+import { getSessionSafely } from "@/auth/session";
 
 import CourseSummaryCard from "@/components/course-summary-card/Course-summary-card";
 import { DashboardCourse } from "@/components/course-summary-card/definitions";
 import { CourseStatus } from "@/shared/types/storyboard";
+import { redirect } from "next/navigation";
 
 type SortOption = "updatedAt_desc" | "createdAt_desc" | "title_asc";
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -133,6 +136,16 @@ function mapSeededCourseToDashboardCourse(
 }
 
 export default async function Dashboard({ searchParams }: DashboardPageProps) {
+  const session = await getSessionSafely();
+  if (!session?.user?.email) {
+    redirect("/auth/signin");
+  }
+
+  const dashboardPath = await getDashboardPathForEmail(session.user.email);
+  if (dashboardPath !== "/admin/dashboard") {
+    redirect(dashboardPath);
+  }
+
   const resolvedSearchParams = ((await searchParams) ?? {}) as SearchParams;
   getPageSize(getStringParam(resolvedSearchParams.pageSize));
   const query =
