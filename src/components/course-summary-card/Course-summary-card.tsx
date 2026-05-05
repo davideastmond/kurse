@@ -19,7 +19,7 @@ export default function CourseSummaryCard({ course }: CourseSummaryCardProps) {
   return (
     <Link
       href={`/admin/storyboard/${course.slug}`}
-      className={`group rounded-4xl border border-border bg-linear-to-br ${course.coverAccent} p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}
+      className={`group rounded-4xl border border-border p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
