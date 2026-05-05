@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Database Utilities
+
+Use these commands to manage and validate course data setup:
+
+```bash
+npm run seed-courses
+```
+
+Seeds or updates the default admin and sample courses.
+
+```bash
+npm run verify-course-trigger
+```
+
+Verifies the insert trigger sets `courses.structure.courseId` to the database-generated `courses.id`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1777386037543,
+      "tag": "0000_happy_crystal",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777386037544,
+      "tag": "0001_courses_structure_course_id_trigger",
+      "breakpoints": true
+    }
+  ]
+}

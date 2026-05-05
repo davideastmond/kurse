@@ -1,65 +1,74 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="min-h-screen bg-background text-foreground">
+      <section className="mx-auto w-full max-w-6xl px-6 py-16 md:px-10 md:py-24">
+        <div className="max-w-3xl">
+          <p className="inline-flex items-center rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+            Kurse Learning Studio
           </p>
+
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight md:text-6xl">
+            Build, launch, and track learning journeys in one place.
+          </h1>
+
+          <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+            Kurse helps teams create structured courses, publish interactive
+            lessons, and keep learners moving with clear progress tracking.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/auth/signup"
+              className="inline-flex items-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+            >
+              Get started
+            </Link>
+            <Link
+              href="/auth/signin"
+              className="inline-flex items-center rounded-lg border border-border bg-surface px-5 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="mt-12 grid gap-4 md:grid-cols-3">
+          <article className="rounded-2xl border border-border bg-surface p-5">
+            <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+              Course Builder
+            </p>
+            <h2 className="mt-2 text-lg font-semibold">Modular by design</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Organize content into modules, lessons, and reusable blocks for
+              fast authoring.
+            </p>
+          </article>
+
+          <article className="rounded-2xl border border-border bg-surface p-5">
+            <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+              Assessment Flow
+            </p>
+            <h2 className="mt-2 text-lg font-semibold">Quizzes built-in</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Add inline quizzes and evaluate learner understanding without
+              leaving the editor.
+            </p>
+          </article>
+
+          <article className="rounded-2xl border border-border bg-surface p-5">
+            <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+              Progress Signals
+            </p>
+            <h2 className="mt-2 text-lg font-semibold">Actionable insights</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Monitor completion and keep both instructors and students aligned
+              on what comes next.
+            </p>
+          </article>
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }
