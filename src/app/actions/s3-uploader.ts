@@ -23,11 +23,20 @@ export async function uploadToS3(
     return { error: "No valid file provided" };
   }
 
+  const endpoint = process.env.CLOUD_FLARE_S3_ENDPOINT;
+  const accessKeyId = process.env.CLOUD_FLARE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.CLOUD_FLARE_SECRET_ACCESS_KEY;
+  const bucketName = process.env.BUCKET_NAME;
+
+  if (!endpoint || !accessKeyId || !secretAccessKey || !bucketName) {
+    return { error: "Missing required S3 configuration" };
+  }
+
   const client = new S3Client({
-    endpoint: process.env.CLOUD_FLARE_S3_ENDPOINT,
+    endpoint,
     credentials: {
-      accessKeyId: process.env.CLOUD_FLARE_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.CLOUD_FLARE_SECRET_ACCESS_KEY!,
+      accessKeyId,
+      secretAccessKey,
     },
     region: "auto",
   });
@@ -38,7 +47,7 @@ export async function uploadToS3(
 
     await client.send(
       new PutObjectCommand({
-        Bucket: process.env.BUCKET_NAME!,
+        Bucket: bucketName,
         Key: objectKey,
         Body: fileBuffer,
         ContentType: file.type || "application/octet-stream",
@@ -51,15 +60,14 @@ export async function uploadToS3(
       process.env.NODE_ENV === "production"
         ? process.env.CLOUD_FLARE_PUBLIC_ACCESS_PROD_URL
         : process.env.CLOUD_FLARE_PUBLIC_ACCESS_DEV_URL;
-    const s3Endpoint = process.env.CLOUD_FLARE_S3_ENDPOINT;
 
-    if (!publicBaseUrl && !s3Endpoint) {
+    if (!publicBaseUrl && !endpoint) {
       return { error: "Missing Cloudflare URL configuration" };
     }
 
     const url = publicBaseUrl
       ? joinUrl(publicBaseUrl, objectKey)
-      : joinUrl(`${s3Endpoint}/${process.env.BUCKET_NAME!}`, objectKey);
+      : joinUrl(`${endpoint}/${bucketName}`, objectKey);
 
     return { url };
   } catch (error) {
