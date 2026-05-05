@@ -50,22 +50,26 @@ function normalizeQuiz(initialQuiz?: StoryboardQuiz): {
     title: initialQuiz.title,
     questions:
       initialQuiz.questions.length > 0
-        ? initialQuiz.questions.map((question) => ({
-            ...question,
-            options:
-              question.options.length >= 2
-                ? question.options
-                : [
-                    ...question.options,
-                    createOption(`Option ${question.options.length + 1}`),
-                  ],
-            correctOptionId:
-              question.options.find(
-                (option) => option.id === question.correctOptionId,
-              )?.id ??
-              question.options[0]?.id ??
-              "",
-          }))
+        ? initialQuiz.questions.map((question) => {
+            const nextOptions = [...question.options];
+
+            while (nextOptions.length < 2) {
+              nextOptions.push(
+                createOption(`Option ${nextOptions.length + 1}`),
+              );
+            }
+
+            return {
+              ...question,
+              options: nextOptions,
+              correctOptionId:
+                nextOptions.find(
+                  (option) => option.id === question.correctOptionId,
+                )?.id ??
+                nextOptions[0]?.id ??
+                "",
+            };
+          })
         : [createQuestion()],
   };
 }
