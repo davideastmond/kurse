@@ -67,10 +67,13 @@ export default function AudioBlockDetail({
   };
 
   const handleSave = useCallback(() => {
+    const trimmedTitle = title.trim();
+    const trimmedDetail = detail.trim();
+
     if (moduleId && lessonId && onUpdateBlock) {
       onUpdateBlock(moduleId, lessonId, block.id, {
-        title: title || block.title,
-        detail: detail || block.detail,
+        title: trimmedTitle || block.title,
+        detail: trimmedDetail || block.detail,
       });
     }
     setIsEditing(false);
