@@ -36,7 +36,7 @@ const BLOCK_TYPE_LABELS: Record<LessonCanvasBlock["type"], string> = {
   audio: "Audio",
 };
 
-function getBlockButtonClasses(isSelected: boolean, isInteractive: boolean) {
+function getBlockCardClasses(isSelected: boolean, isInteractive: boolean) {
   const interactiveClasses = isInteractive
     ? "cursor-pointer hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
     : "cursor-default";
@@ -316,14 +316,25 @@ export default function LessonCanvas({
             const isChecked = selectedBlockIds.includes(block.id);
 
             return (
-              <button
+              <div
                 key={block.id}
-                type="button"
-                className={getBlockButtonClasses(isSelected, isInteractive)}
+                role={isInteractive ? "button" : undefined}
+                tabIndex={isInteractive ? 0 : undefined}
+                className={getBlockCardClasses(isSelected, isInteractive)}
                 onClick={(event) => {
                   event.stopPropagation();
                   onBlockClick?.(block);
                 }}
+                onKeyDown={
+                  isInteractive
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onBlockClick?.(block);
+                        }
+                      }
+                    : undefined
+                }
                 aria-pressed={isInteractive ? isSelected : undefined}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -359,7 +370,7 @@ export default function LessonCanvas({
                     {block.detail}
                   </p>
                 </div>
-              </button>
+              </div>
             );
           })
         ) : (
