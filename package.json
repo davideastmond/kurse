@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed-courses": "tsx src/db/seed/courses/seed.ts"
+    "seed-courses": "tsx src/db/seed/courses/seed.ts",
+    "verify-course-trigger": "tsx src/db/seed/courses/verify-trigger.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1041.0",

@@ -158,60 +158,51 @@ export async function createCourse(
 
   const slug = createUniqueSlug(slugify(title));
 
-  try {
-    const created = await db.transaction(async (tx) => {
-      const [inserted] = await tx
-        .insert(courses)
-        .values({
-          title,
-          slug,
-          description,
-          status: "DRAFT",
-          createdById: userId,
-        })
-        .returning({
-          id: courses.id,
-          slug: courses.slug,
-        });
-
-      if (!inserted) {
-        throw new Error("Unable to create course right now.");
-      }
-
-      const initialStructure: PersistedCourseStructure = {
-        courseId: inserted.id,
-        modules: [
+  const initialStructure: PersistedCourseStructure = {
+    // Populated by a DB trigger on INSERT to keep this write atomic.
+    courseId: "",
+    modules: [
+      {
+        id: moduleId,
+        title: "New Module",
+        progressLabel: "0%",
+        lessons: [
           {
-            id: moduleId,
-            title: "New Module",
-            progressLabel: "0%",
-            lessons: [
-              {
-                id: lessonId,
-                title: "New Lesson",
-                duration: "",
-                objective: "",
-                blocks: [],
-              },
-            ],
+            id: lessonId,
+            title: "New Lesson",
+            duration: "",
+            objective: "",
+            blocks: [],
           },
         ],
-        metadata: {
-          synopsis: description,
-          audience: "",
-          estimatedDuration: "",
-        },
-      };
+      },
+    ],
+    metadata: {
+      synopsis: description,
+      audience: "",
+      estimatedDuration: "",
+    },
+  };
 
-      await tx
-        .update(courses)
-        .set({
-          structure: initialStructure,
-        })
-        .where(eq(courses.id, inserted.id));
+  try {
+    const [created] = await db
+      .insert(courses)
+      .values({
+        title,
+        slug,
+        description,
+        status: "DRAFT",
+        createdById: userId,
+        structure: initialStructure,
+      })
+      .returning({
+        id: courses.id,
+        slug: courses.slug,
+      });
 
-      return inserted;
-    });
+    if (!created) {
+      throw new Error("Unable to create course right now.");
+    }
 
     revalidatePath("/admin/dashboard");
 
