@@ -11,13 +11,11 @@ const STATUS_CLASSES: StatusClasses = {
   DRAFT: "bg-amber-50 text-amber-800",
 };
 
-type StoryboardSummaryCardProps = {
+type CourseSummaryCardProps = {
   course: DashboardCourse;
 };
 
-export default function StoryboardSummaryCard({
-  course,
-}: StoryboardSummaryCardProps) {
+export default function CourseSummaryCard({ course }: CourseSummaryCardProps) {
   return (
     <Link
       href={`/admin/storyboard/${course.slug}`}
@@ -42,7 +40,7 @@ export default function StoryboardSummaryCard({
         {course.synopsis}
       </p>
       <div className="mt-6 flex flex-wrap gap-5 text-sm text-slate-700">
-        <span>{course.modules.length} modules</span>
+        <span>modules count TBI</span>
         <span>{course.estimatedDuration}</span>
         <span>{course.enrolledCount} learners</span>
       </div>

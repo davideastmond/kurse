@@ -10,12 +10,33 @@ export const BLOCK_TYPES = [
 
 export type StoryboardBlockType = (typeof BLOCK_TYPES)[number];
 
+export type QuizOption = {
+  id: string;
+  text: string;
+};
+
+export type QuizQuestion = {
+  id: string;
+  prompt: string;
+  options: QuizOption[];
+  correctOptionId: string;
+};
+
+export type StoryboardQuiz = {
+  title: string;
+  questions: QuizQuestion[];
+};
+
 export type StoryboardBlock = {
   id: string;
   type: StoryboardBlockType;
   title: string;
   detail: string;
   duration: string;
+  videoUrl?: string;
+  imageUrl?: string;
+  audioUrl?: string;
+  quiz?: StoryboardQuiz;
 };
 
 export type StoryboardLesson = {

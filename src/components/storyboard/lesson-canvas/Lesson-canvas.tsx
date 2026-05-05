@@ -1,7 +1,7 @@
 "use client";
 
 import { type StoryboardBlock } from "@/shared/types/storyboard";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type LessonCanvasBlock = StoryboardBlock;
 
@@ -24,6 +24,7 @@ type LessonCanvasProps = {
   onCanvasClick?: () => void;
   onBlockClick?: (block: LessonCanvasBlock) => void;
   onLessonAttributesChange?: (values: LessonCanvasEditableValues) => void;
+  onDeleteBlocks?: (blockIds: string[]) => void;
   className?: string;
 };
 
@@ -35,7 +36,7 @@ const BLOCK_TYPE_LABELS: Record<LessonCanvasBlock["type"], string> = {
   audio: "Audio",
 };
 
-function getBlockButtonClasses(isSelected: boolean, isInteractive: boolean) {
+function getBlockCardClasses(isSelected: boolean, isInteractive: boolean) {
   const interactiveClasses = isInteractive
     ? "cursor-pointer hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
     : "cursor-default";
@@ -58,11 +59,15 @@ export default function LessonCanvas({
   onCanvasClick,
   onBlockClick,
   onLessonAttributesChange,
+  onDeleteBlocks,
   className,
 }: LessonCanvasProps) {
+  const sectionRef = useRef<HTMLElement | null>(null);
   const [editingField, setEditingField] =
     useState<LessonCanvasEditableField | null>(null);
   const [draftValue, setDraftValue] = useState("");
+  const [isBatchEditing, setIsBatchEditing] = useState(false);
+  const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
 
   const isEditable = typeof onLessonAttributesChange === "function";
 
@@ -80,21 +85,38 @@ export default function LessonCanvas({
     setDraftValue("");
   };
 
-  const saveEdit = () => {
+  const stopBatchEditing = () => {
+    stopEditing();
+    setIsBatchEditing(false);
+    setSelectedBlockIds([]);
+  };
+
+  const saveEdit = (options?: { closeBatchAfterTitle?: boolean }) => {
     if (!editingField || !onLessonAttributesChange) {
       return;
     }
 
     const normalizedValue = draftValue.trim();
+    const isTitleEdit = editingField === "title";
+    const shouldCloseBatchAfterTitle =
+      options?.closeBatchAfterTitle ?? isBatchEditing;
 
-    if (editingField === "title") {
+    if (isTitleEdit) {
       if (!normalizedValue) {
-        stopEditing();
+        if (isBatchEditing && shouldCloseBatchAfterTitle) {
+          stopBatchEditing();
+        } else {
+          stopEditing();
+        }
         return;
       }
 
       onLessonAttributesChange({ title: normalizedValue });
-      stopEditing();
+      if (isBatchEditing && shouldCloseBatchAfterTitle) {
+        stopBatchEditing();
+      } else {
+        stopEditing();
+      }
       return;
     }
 
@@ -108,6 +130,25 @@ export default function LessonCanvas({
     stopEditing();
   };
 
+  const handleBatchSelectionToggle = (blockId: string) => {
+    setSelectedBlockIds((current) => {
+      if (current.includes(blockId)) {
+        return current.filter((candidate) => candidate !== blockId);
+      }
+
+      return [...current, blockId];
+    });
+  };
+
+  const handleDeleteSelected = () => {
+    if (!onDeleteBlocks || selectedBlockIds.length === 0) {
+      return;
+    }
+
+    onDeleteBlocks(selectedBlockIds);
+    setSelectedBlockIds([]);
+  };
+
   const handleEditorKeyDown: React.KeyboardEventHandler<
     HTMLInputElement | HTMLTextAreaElement
   > = (event) => {
@@ -118,7 +159,11 @@ export default function LessonCanvas({
 
     if (event.key === "Escape") {
       event.preventDefault();
-      stopEditing();
+      if (editingField === "title" && isBatchEditing) {
+        stopBatchEditing();
+      } else {
+        stopEditing();
+      }
     }
   };
 
@@ -134,6 +179,7 @@ export default function LessonCanvas({
 
   return (
     <section
+      ref={sectionRef}
       id={id}
       className={canvasClassName}
       onClick={() => {
@@ -152,7 +198,16 @@ export default function LessonCanvas({
               onChange={(event) => {
                 setDraftValue(event.target.value);
               }}
-              onBlur={saveEdit}
+              onBlur={(event) => {
+                const nextFocusTarget = event.relatedTarget;
+                const nextFocusNode =
+                  nextFocusTarget instanceof Node ? nextFocusTarget : null;
+                const isStillInsideCanvas =
+                  !!nextFocusNode &&
+                  !!sectionRef.current?.contains(nextFocusNode);
+
+                saveEdit({ closeBatchAfterTitle: !isStillInsideCanvas });
+              }}
               onKeyDown={handleEditorKeyDown}
               className="w-full max-w-3xl rounded-xl border border-brand-300 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-slate-950 outline-none ring-brand-500 focus:ring-2"
               aria-label="Edit lesson title"
@@ -161,6 +216,7 @@ export default function LessonCanvas({
             <h2
               className={`text-2xl font-semibold tracking-tight text-slate-950 ${isEditable ? "cursor-text" : ""}`}
               onDoubleClick={() => {
+                setIsBatchEditing(true);
                 startEditing("title", title);
               }}
               title={isEditable ? "Double-click to edit title" : undefined}
@@ -175,7 +231,7 @@ export default function LessonCanvas({
               onChange={(event) => {
                 setDraftValue(event.target.value);
               }}
-              onBlur={saveEdit}
+              onBlur={() => saveEdit()}
               onKeyDown={handleEditorKeyDown}
               rows={3}
               className="w-full max-w-3xl rounded-xl border border-brand-300 bg-white px-3 py-2 text-sm leading-6 text-slate-700 outline-none ring-brand-500 focus:ring-2"
@@ -200,48 +256,111 @@ export default function LessonCanvas({
             onChange={(event) => {
               setDraftValue(event.target.value);
             }}
-            onBlur={saveEdit}
+            onBlur={() => saveEdit()}
             onKeyDown={handleEditorKeyDown}
             className="w-36 rounded-full border border-brand-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 outline-none ring-brand-500 focus:ring-2"
             aria-label="Edit lesson duration"
           />
         ) : (
-          <div
-            className={`inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${duration ? "text-slate-600" : "text-slate-400"} ${isEditable ? "cursor-text" : ""}`}
-            onDoubleClick={() => {
-              startEditing("duration", duration);
-            }}
-            title={isEditable ? "Double-click to edit duration" : undefined}
-          >
-            {duration || "Add duration"}
+          <div className="flex items-center gap-2">
+            <div
+              className={`inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${duration ? "text-slate-600" : "text-slate-400"} ${isEditable ? "cursor-text" : ""}`}
+              onDoubleClick={() => {
+                startEditing("duration", duration);
+              }}
+              title={isEditable ? "Double-click to edit duration" : undefined}
+            >
+              {duration || "Add duration"}
+            </div>
+
+            {isBatchEditing ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  stopBatchEditing();
+                }}
+                className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                Done
+              </button>
+            ) : null}
           </div>
         )}
       </header>
+
+      {isBatchEditing ? (
+        <div className="mt-4 flex items-center justify-between rounded-2xl border border-rose-200 bg-rose-50/70 px-3 py-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-700">
+            Batch Edit: {selectedBlockIds.length} selected
+          </p>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleDeleteSelected();
+            }}
+            disabled={selectedBlockIds.length === 0}
+            className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Delete Selected
+          </button>
+        </div>
+      ) : null}
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {blocks.length > 0 ? (
           blocks.map((block) => {
             const isSelected = block.id === selectedBlockId;
             const isInteractive = typeof onBlockClick === "function";
+            const isChecked = selectedBlockIds.includes(block.id);
 
             return (
-              <button
+              <div
                 key={block.id}
-                type="button"
-                className={getBlockButtonClasses(isSelected, isInteractive)}
+                role={isInteractive ? "button" : undefined}
+                tabIndex={isInteractive ? 0 : undefined}
+                className={getBlockCardClasses(isSelected, isInteractive)}
                 onClick={(event) => {
                   event.stopPropagation();
                   onBlockClick?.(block);
                 }}
+                onKeyDown={
+                  isInteractive
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onBlockClick?.(block);
+                        }
+                      }
+                    : undefined
+                }
                 aria-pressed={isInteractive ? isSelected : undefined}
               >
                 <div className="flex items-start justify-between gap-3">
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
                     {BLOCK_TYPE_LABELS[block.type]}
                   </span>
-                  <span className="text-xs font-medium text-slate-500">
-                    {block.duration}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {isBatchEditing ? (
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(event) => {
+                          event.stopPropagation();
+                          handleBatchSelectionToggle(block.id);
+                        }}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                        }}
+                        aria-label={`Select block ${block.title}`}
+                        className="h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+                      />
+                    ) : null}
+                    <span className="text-xs font-medium text-slate-500">
+                      {block.duration}
+                    </span>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-base font-semibold text-slate-900">
@@ -251,7 +370,7 @@ export default function LessonCanvas({
                     {block.detail}
                   </p>
                 </div>
-              </button>
+              </div>
             );
           })
         ) : (

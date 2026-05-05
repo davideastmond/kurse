@@ -2,8 +2,8 @@ import Link from "next/link";
 
 import { fetchSeededCourses } from "@/app/actions/courses";
 
-import { DashboardCourse } from "@/components/storyboard-summary-card/definitions";
-import StoryboardSummaryCard from "@/components/storyboard-summary-card/Storyboard-summary-card";
+import CourseSummaryCard from "@/components/course-summary-card/Course-summary-card";
+import { DashboardCourse } from "@/components/course-summary-card/definitions";
 import { CourseStatus } from "@/shared/types/storyboard";
 
 type SortOption = "updatedAt_desc" | "createdAt_desc" | "title_asc";
@@ -185,7 +185,7 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
         {filteredCourses.length > 0 ? (
           <section className="grid gap-4 md:grid-cols-[minmax(0,2fr)_repeat(2,minmax(0,1fr))]">
             {filteredCourses.map((course) => (
-              <StoryboardSummaryCard key={course.id} course={course} />
+              <CourseSummaryCard key={course.id} course={course} />
             ))}
           </section>
         ) : (

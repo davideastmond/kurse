@@ -10,6 +10,7 @@
     "seed-courses": "tsx src/db/seed/courses/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1041.0",
     "@neondatabase/serverless": "^1.1.0",
     "drizzle-orm": "^0.45.2",
     "drizzle-seed": "^0.3.1",

@@ -356,6 +356,31 @@ export default function Workspace({
     [applyCourseMutation],
   );
 
+  const handleModuleTitleChange = useCallback(
+    (moduleId: string, title: string) => {
+      applyCourseMutation((current) => {
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            title,
+          };
+        });
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
   const handleUpdateBlock = useCallback(
     (
       moduleId: string,
@@ -404,29 +429,43 @@ export default function Workspace({
     [applyCourseMutation],
   );
 
-  const handleAddModule = useCallback(() => {
-    applyCourseMutation((current) => {
-      const nextModuleId = createEntityId("module");
-      const nextModule = {
-        id: nextModuleId,
-        title: "New Module",
-        progressLabel: "0%",
-        evaluationTitle: undefined,
-        lessons: [],
-      };
+  const handleAddModule = useCallback(
+    (requestedTitle?: string) => {
+      applyCourseMutation((current) => {
+        const nextModuleId = createEntityId("module");
+        const sanitizedTitle = requestedTitle?.trim();
+        const nextModule = {
+          id: nextModuleId,
+          title: sanitizedTitle || "New Module",
+          progressLabel: "0%",
+          evaluationTitle: undefined,
+          lessons: [],
+        };
 
-      return {
-        nextCourse: {
-          ...current,
-          modules: [...current.modules, nextModule],
-        },
-        nextSelection: {
-          type: "MODULE",
-          moduleId: nextModuleId,
-        },
-      };
-    });
-  }, [applyCourseMutation]);
+        return {
+          nextCourse: {
+            ...current,
+            modules: [...current.modules, nextModule],
+          },
+          nextSelection: {
+            type: "MODULE",
+            moduleId: nextModuleId,
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
+  const requestModuleCreation = useCallback(() => {
+    const userInput = window.prompt("Name your new module", "New Module");
+
+    if (userInput === null) {
+      return;
+    }
+
+    handleAddModule(userInput);
+  }, [handleAddModule]);
 
   const handleAddLesson = useCallback(
     (targetModuleId?: string) => {
@@ -548,6 +587,54 @@ export default function Workspace({
     ],
   );
 
+  const handleDeleteBlocks = useCallback(
+    (moduleId: string, lessonId: string, blockIds: string[]) => {
+      if (blockIds.length === 0) {
+        return;
+      }
+
+      const blockIdSet = new Set(blockIds);
+
+      applyCourseMutation((current) => {
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            lessons: moduleItem.lessons.map((lessonItem) => {
+              if (lessonItem.id !== lessonId) {
+                return lessonItem;
+              }
+
+              return {
+                ...lessonItem,
+                // Filter preserves the relative order of remaining blocks.
+                blocks: lessonItem.blocks.filter(
+                  (blockItem) => !blockIdSet.has(blockItem.id),
+                ),
+              };
+            }),
+          };
+        });
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+          nextSelection: {
+            type: "LESSON",
+            moduleId,
+            lessonId,
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
   if (!builderResult.ok || !renderModel) {
     return (
       <div className="min-h-screen bg-slate-50 p-6">
@@ -614,9 +701,11 @@ export default function Workspace({
                 onSelectModule={selectModule}
                 onSelectLesson={selectLesson}
                 onSelectBlock={selectBlock}
+                onModuleTitleChange={handleModuleTitleChange}
                 onLessonAttributesChange={handleLessonAttributesChange}
                 onAddLesson={handleAddLesson}
                 onAddBlock={addBlockToLesson}
+                onDeleteBlocks={handleDeleteBlocks}
               />
             ))}
           </div>
@@ -624,7 +713,7 @@ export default function Workspace({
           <aside className="h-fit rounded-4xl border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur xl:flex xl:h-full xl:min-h-0 xl:flex-col">
             <div className="shrink-0">
               <ToolBar
-                onAddModule={handleAddModule}
+                onAddModule={requestModuleCreation}
                 onAddLesson={() => {
                   handleAddLesson();
                 }}
@@ -674,6 +763,20 @@ export default function Workspace({
                 moduleId={selectedModuleId}
                 lessonId={selectedLessonId}
               />
+
+              {selectedBlock && selectedModuleId && selectedLessonId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDeleteBlocks(selectedModuleId, selectedLessonId, [
+                      selectedBlock.id,
+                    ]);
+                  }}
+                  className="mt-4 w-full rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-rose-700 transition-colors hover:bg-rose-100"
+                >
+                  Delete Highlighted Block
+                </button>
+              ) : null}
             </div>
           </aside>
         </div>
