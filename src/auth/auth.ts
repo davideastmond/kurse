@@ -78,13 +78,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token }) {
       if (!token?.email) {
-        throw Error("JWT token is missing email claim");
+        return token;
       }
 
       const db = getDb();
       if (!db) {
-        throw Error("Database is not configured. Set DATABASE_URL and retry.");
+        return token;
       }
+
       const [userInDb] = await db
         .select()
         .from(users)
@@ -92,7 +93,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         .limit(1);
 
       if (!userInDb) {
-        throw Error("User not found in database");
+        return token;
       }
 
       return {
