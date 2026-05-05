@@ -115,8 +115,9 @@ export default function ImageBlockDetail({
             src={block.imageUrl}
             alt={block.title}
             className="h-auto max-h-72 w-full rounded-xl object-contain"
-            width={40}
-            height={30}
+            width={1200}
+            height={900}
+            sizes="100vw"
           />
         ) : (
           <p className="py-10 text-center text-sm text-fuchsia-800">
