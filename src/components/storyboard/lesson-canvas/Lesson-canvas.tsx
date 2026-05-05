@@ -200,9 +200,11 @@ export default function LessonCanvas({
               }}
               onBlur={(event) => {
                 const nextFocusTarget = event.relatedTarget;
+                const nextFocusNode =
+                  nextFocusTarget instanceof Node ? nextFocusTarget : null;
                 const isStillInsideCanvas =
-                  !!nextFocusTarget &&
-                  !!sectionRef.current?.contains(nextFocusTarget);
+                  !!nextFocusNode &&
+                  !!sectionRef.current?.contains(nextFocusNode);
 
                 saveEdit({ closeBatchAfterTitle: !isStillInsideCanvas });
               }}
