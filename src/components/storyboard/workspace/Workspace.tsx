@@ -637,8 +637,8 @@ export default function Workspace({
 
   if (!builderResult.ok || !renderModel) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6">
-        <div className="mx-auto max-w-4xl rounded-3xl border border-red-200 bg-red-50 p-6 text-red-900 shadow-sm">
+      <div className="min-h-screen bg-muted p-6">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-danger/40 bg-danger/15 p-6 text-danger shadow-sm">
           <h1 className="text-xl font-semibold">
             Storyboard configuration error
           </h1>
@@ -660,29 +660,29 @@ export default function Workspace({
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_35%),linear-gradient(180deg,#f8fbff_0%,#eef4ff_52%,#f8fafc_100%)] p-6 xl:h-screen xl:overflow-hidden">
+    <div className="min-h-screen bg-background p-6 xl:h-screen xl:overflow-hidden">
       <div className="mx-auto flex h-full max-w-7xl flex-col">
-        <header className="mb-6 shrink-0 rounded-4xl border border-white/70 bg-white/80 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+        <header className="mb-6 shrink-0 rounded-4xl border border-border/70 bg-surface/80 p-6 shadow-sm backdrop-blur">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700">
                 Storyboard Workspace
               </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">
                 {renderModel.course.title}
               </h1>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 {renderModel.course.synopsis}
               </p>
             </div>
-            <div className="flex flex-wrap gap-3 text-sm text-slate-600">
-              <span className="rounded-full border border-slate-200 bg-white px-4 py-2 font-medium">
+            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+              <span className="rounded-full border border-border bg-surface px-4 py-2 font-medium">
                 {renderModel.modules.length} modules
               </span>
-              <span className="rounded-full border border-slate-200 bg-white px-4 py-2 font-medium">
+              <span className="rounded-full border border-border bg-surface px-4 py-2 font-medium">
                 {lessonCount} lessons
               </span>
-              <span className="rounded-full border border-slate-200 bg-white px-4 py-2 font-medium">
+              <span className="rounded-full border border-border bg-surface px-4 py-2 font-medium">
                 {renderModel.course.estimatedDuration}
               </span>
             </div>
@@ -710,7 +710,7 @@ export default function Workspace({
             ))}
           </div>
 
-          <aside className="h-fit rounded-4xl border border-slate-200 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur xl:flex xl:h-full xl:min-h-0 xl:flex-col">
+          <aside className="h-fit rounded-4xl border border-border bg-surface/90 p-5 shadow-sm backdrop-blur xl:flex xl:h-full xl:min-h-0 xl:flex-col">
             <div className="shrink-0">
               <ToolBar
                 onAddModule={requestModuleCreation}
@@ -721,9 +721,9 @@ export default function Workspace({
               />
             </div>
 
-            <div className="mt-5 border-t border-slate-200/80 pt-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600">
-                <p className="font-semibold uppercase tracking-[0.16em] text-slate-500">
+            <div className="mt-5 border-t border-border/80 pt-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+              <div className="rounded-2xl border border-border bg-muted/70 p-3 text-xs text-muted-foreground">
+                <p className="font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Current Selection
                 </p>
                 <p className="mt-2 truncate">
@@ -737,8 +737,8 @@ export default function Workspace({
                 </p>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600">
-                <p className="font-semibold uppercase tracking-[0.16em] text-slate-500">
+              <div className="mt-4 rounded-2xl border border-border bg-muted/70 p-3 text-xs text-muted-foreground">
+                <p className="font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Save Status
                 </p>
                 {saveState.status === "saving" ? (
@@ -748,13 +748,13 @@ export default function Workspace({
                   <p className="mt-2 text-emerald-700">All changes saved.</p>
                 ) : null}
                 {saveState.status === "error" ? (
-                  <p className="mt-2 text-red-700">
+                  <p className="mt-2 text-danger">
                     {saveState.message ?? "Unable to save your changes."}
                   </p>
                 ) : null}
               </div>
 
-              <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+              <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                 Block Detail
               </p>
               <BlockDetailRenderer
@@ -772,7 +772,7 @@ export default function Workspace({
                       selectedBlock.id,
                     ]);
                   }}
-                  className="mt-4 w-full rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-rose-700 transition-colors hover:bg-rose-100"
+                  className="mt-4 w-full rounded-lg border border-danger/40 bg-danger/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-danger transition-colors hover:bg-danger/20"
                 >
                   Delete Highlighted Block
                 </button>

@@ -127,7 +127,7 @@ function mapSeededCourseToDashboardCourse(
     createdAt: toIsoString(course.createdAt),
     updatedAt: toIsoString(course.updatedAt),
     enrolledCount: 0,
-    coverAccent: "from-sky-200 via-cyan-50 to-white",
+    coverAccent: "from-brand-200/55 via-brand-100/35 to-surface",
     synopsis: metadata.synopsis ?? course.description,
     audience: metadata.audience ?? "",
     estimatedDuration: metadata.estimatedDuration ?? "",
@@ -193,7 +193,7 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
     });
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(21,94,239,0.12),transparent_40%),linear-gradient(180deg,var(--background),#eef4ff)] px-6 py-10 text-foreground md:px-10">
+    <main className="min-h-screen bg-background px-6 py-10 text-foreground md:px-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
         {filteredCourses.length > 0 ? (
           <section className="grid gap-4 md:grid-cols-[minmax(0,2fr)_repeat(2,minmax(0,1fr))]">

@@ -15,7 +15,7 @@ export default function BlockDetailRenderer({
 }: BlockDetailRendererProps) {
   if (!block) {
     return (
-      <div className="mt-4 rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-sm leading-6 text-slate-500">
+      <div className="mt-4 rounded-3xl border border-dashed border-border bg-muted px-4 py-10 text-sm leading-6 text-muted-foreground">
         Select a block from any lesson canvas to inspect a larger detail view.
       </div>
     );

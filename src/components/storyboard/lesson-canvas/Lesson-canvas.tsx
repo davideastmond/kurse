@@ -43,7 +43,7 @@ function getBlockCardClasses(isSelected: boolean, isInteractive: boolean) {
 
   const selectedClasses = isSelected
     ? "border-brand-400 bg-brand-50/70 shadow-sm"
-    : "border-slate-200 bg-white";
+    : "border-border bg-surface";
 
   return `flex w-full flex-col gap-3 rounded-3xl border p-4 text-left transition ${interactiveClasses} ${selectedClasses}`;
 }
@@ -168,9 +168,9 @@ export default function LessonCanvas({
   };
 
   const canvasClassName = [
-    "rounded-4xl border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,245,249,0.92))] p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] transition-all",
+    "rounded-4xl border border-border bg-surface p-5 shadow-sm transition-all",
     isSelected
-      ? "border-sky-300 bg-[linear-gradient(180deg,rgba(240,249,255,0.95),rgba(248,250,252,0.95))] ring-2 ring-sky-100 shadow-[0_20px_55px_rgba(14,165,233,0.18)]"
+      ? "border-sky-300 bg-brand-50/45 ring-2 ring-sky-100 shadow-md"
       : "",
     className,
   ]
@@ -186,9 +186,9 @@ export default function LessonCanvas({
         onCanvasClick?.();
       }}
     >
-      <header className="flex flex-col gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
+      <header className="flex flex-col gap-3 border-b border-border/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
             Lesson Canvas
           </p>
           {editingField === "title" ? (
@@ -209,12 +209,12 @@ export default function LessonCanvas({
                 saveEdit({ closeBatchAfterTitle: !isStillInsideCanvas });
               }}
               onKeyDown={handleEditorKeyDown}
-              className="w-full max-w-3xl rounded-xl border border-brand-300 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-slate-950 outline-none ring-brand-500 focus:ring-2"
+              className="w-full max-w-3xl rounded-xl border border-brand-300 bg-surface px-3 py-2 text-2xl font-semibold tracking-tight text-foreground outline-none ring-brand-500 focus:ring-2"
               aria-label="Edit lesson title"
             />
           ) : (
             <h2
-              className={`text-2xl font-semibold tracking-tight text-slate-950 ${isEditable ? "cursor-text" : ""}`}
+              className={`text-2xl font-semibold tracking-tight text-foreground ${isEditable ? "cursor-text" : ""}`}
               onDoubleClick={() => {
                 setIsBatchEditing(true);
                 startEditing("title", title);
@@ -234,12 +234,12 @@ export default function LessonCanvas({
               onBlur={() => saveEdit()}
               onKeyDown={handleEditorKeyDown}
               rows={3}
-              className="w-full max-w-3xl rounded-xl border border-brand-300 bg-white px-3 py-2 text-sm leading-6 text-slate-700 outline-none ring-brand-500 focus:ring-2"
+              className="w-full max-w-3xl rounded-xl border border-brand-300 bg-surface px-3 py-2 text-sm leading-6 text-muted-foreground outline-none ring-brand-500 focus:ring-2"
               aria-label="Edit lesson objective"
             />
           ) : (
             <p
-              className={`max-w-3xl text-sm leading-6 ${objective ? "text-slate-600" : "text-slate-400"} ${isEditable ? "cursor-text" : ""}`}
+              className={`max-w-3xl text-sm leading-6 ${objective ? "text-muted-foreground" : "text-muted-foreground"} ${isEditable ? "cursor-text" : ""}`}
               onDoubleClick={() => {
                 startEditing("objective", objective);
               }}
@@ -258,13 +258,13 @@ export default function LessonCanvas({
             }}
             onBlur={() => saveEdit()}
             onKeyDown={handleEditorKeyDown}
-            className="w-36 rounded-full border border-brand-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 outline-none ring-brand-500 focus:ring-2"
+            className="w-36 rounded-full border border-brand-300 bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground outline-none ring-brand-500 focus:ring-2"
             aria-label="Edit lesson duration"
           />
         ) : (
           <div className="flex items-center gap-2">
             <div
-              className={`inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${duration ? "text-slate-600" : "text-slate-400"} ${isEditable ? "cursor-text" : ""}`}
+              className={`inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${duration ? "text-muted-foreground" : "text-muted-foreground"} ${isEditable ? "cursor-text" : ""}`}
               onDoubleClick={() => {
                 startEditing("duration", duration);
               }}
@@ -280,7 +280,7 @@ export default function LessonCanvas({
                   event.stopPropagation();
                   stopBatchEditing();
                 }}
-                className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                className="inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground transition hover:border-border hover:bg-muted"
               >
                 Done
               </button>
@@ -301,7 +301,7 @@ export default function LessonCanvas({
               handleDeleteSelected();
             }}
             disabled={selectedBlockIds.length === 0}
-            className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg border border-rose-300 bg-surface px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Delete Selected
           </button>
@@ -338,7 +338,7 @@ export default function LessonCanvas({
                 aria-pressed={isInteractive ? isSelected : undefined}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     {BLOCK_TYPE_LABELS[block.type]}
                   </span>
                   <div className="flex items-center gap-2">
@@ -354,19 +354,19 @@ export default function LessonCanvas({
                           event.stopPropagation();
                         }}
                         aria-label={`Select block ${block.title}`}
-                        className="h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+                        className="h-4 w-4 rounded border-border text-rose-600 focus:ring-rose-500"
                       />
                     ) : null}
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-muted-foreground">
                       {block.duration}
                     </span>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-base font-semibold text-slate-900">
+                  <h3 className="text-base font-semibold text-foreground">
                     {block.title}
                   </h3>
-                  <p className="line-clamp-3 text-sm leading-6 text-slate-600">
+                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
                     {block.detail}
                   </p>
                 </div>
@@ -374,7 +374,7 @@ export default function LessonCanvas({
             );
           })
         ) : (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 px-5 py-10 text-center text-sm text-slate-500 sm:col-span-2 xl:col-span-3">
+          <div className="rounded-3xl border border-dashed border-border bg-surface/70 px-5 py-10 text-center text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">
             Add blocks to start composing this lesson.
           </div>
         )}

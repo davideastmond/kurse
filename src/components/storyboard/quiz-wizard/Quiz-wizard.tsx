@@ -217,20 +217,20 @@ export default function QuizWizard({
   }, [onSave, questions, title]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-violet-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/35 p-4">
+      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-violet-200 bg-surface p-6 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-slate-950">Quiz Wizard</h2>
+          <h2 className="text-xl font-semibold text-foreground">Quiz Wizard</h2>
           <button
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 transition-colors hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted"
           >
             Close
           </button>
         </div>
 
         <div className="mt-5">
-          <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
+          <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Quiz Name
           </label>
           <input
@@ -242,7 +242,7 @@ export default function QuizWizard({
                 title: event.target.value,
               }));
             }}
-            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
             placeholder="Quiz name"
           />
         </div>
@@ -259,14 +259,14 @@ export default function QuizWizard({
                 </p>
                 <button
                   onClick={() => handleRemoveQuestion(question.id)}
-                  className="rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 transition-colors hover:bg-violet-50"
+                  className="rounded-lg border border-violet-200 bg-surface px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 transition-colors hover:bg-violet-50"
                 >
                   Remove
                 </button>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
+                <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Prompt
                 </label>
                 <input
@@ -278,13 +278,13 @@ export default function QuizWizard({
                       prompt: event.target.value,
                     }));
                   }}
-                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                   placeholder="Write the question"
                 />
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Answer Options (single correct)
                 </p>
                 {question.options.map((option, optionIndex) => (
@@ -321,13 +321,13 @@ export default function QuizWizard({
                           ),
                         }));
                       }}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                       placeholder={`Option ${optionIndex + 1}`}
                     />
                     <button
                       onClick={() => handleRemoveOption(question.id, option.id)}
                       disabled={question.options.length <= 2}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-lg border border-border bg-surface px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Remove
                     </button>
@@ -335,7 +335,7 @@ export default function QuizWizard({
                 ))}
                 <button
                   onClick={() => handleAddOption(question.id)}
-                  className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 transition-colors hover:bg-violet-50"
+                  className="rounded-lg border border-violet-200 bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 transition-colors hover:bg-violet-50"
                 >
                   Add Option
                 </button>
@@ -345,14 +345,14 @@ export default function QuizWizard({
 
           <button
             onClick={handleAddQuestion}
-            className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 transition-colors hover:bg-violet-50"
+            className="rounded-lg border border-violet-200 bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 transition-colors hover:bg-violet-50"
           >
             Add Question
           </button>
         </div>
 
         {errorMessage ? (
-          <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="mt-4 rounded-lg border border-danger/40 bg-danger/15 px-3 py-2 text-sm text-danger">
             {errorMessage}
           </p>
         ) : null}
@@ -366,7 +366,7 @@ export default function QuizWizard({
           </button>
           <button
             onClick={onClose}
-            className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 transition-colors hover:bg-slate-50"
+            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted"
           >
             Cancel
           </button>

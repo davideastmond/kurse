@@ -42,13 +42,13 @@ export default function ModuleSection({
     <section
       className={`space-y-4 rounded-3xl border p-3 transition-all ${
         isModuleSelected
-          ? "border-sky-200 bg-white/80 ring-2 ring-sky-100 shadow-[0_16px_40px_rgba(14,165,233,0.12)]"
+          ? "border-sky-200 bg-surface/80 ring-2 ring-sky-100 shadow-[0_16px_40px_rgba(14,165,233,0.12)]"
           : "border-transparent"
       }`}
     >
       <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
             Module
             {isModuleSelected ? (
               <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] tracking-[0.12em] text-sky-700">
@@ -74,14 +74,14 @@ export default function ModuleSection({
                   }
                 }}
                 onBlur={commitTitleChange}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-lg font-semibold tracking-tight text-slate-900 outline-none ring-sky-200 transition focus:border-sky-400 focus:ring"
+                className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-lg font-semibold tracking-tight text-foreground outline-none ring-sky-200 transition focus:border-sky-400 focus:ring"
                 aria-label="Module title"
                 autoFocus
               />
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <h2 className="cursor-pointer text-2xl font-semibold tracking-tight text-slate-900 transition-colors hover:text-sky-700">
+              <h2 className="cursor-pointer text-2xl font-semibold tracking-tight text-foreground transition-colors hover:text-sky-700">
                 <button
                   type="button"
                   className="cursor-pointer text-left transition-colors hover:text-sky-700"
@@ -99,21 +99,21 @@ export default function ModuleSection({
                   setDraftTitle(moduleItem.title);
                   setIsEditingTitle(true);
                 }}
-                className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:bg-muted"
               >
                 Rename
               </button>
             </div>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.16em] text-slate-500">
+        <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">
           {moduleItem.progressLabel ? (
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold">
+            <span className="rounded-full border border-border bg-surface px-3 py-1 font-semibold">
               {moduleItem.progressLabel}
             </span>
           ) : null}
           {moduleItem.evaluationTitle ? (
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold">
+            <span className="rounded-full border border-border bg-surface px-3 py-1 font-semibold">
               {moduleItem.evaluationTitle}
             </span>
           ) : null}
@@ -172,7 +172,7 @@ export default function ModuleSection({
                       event.stopPropagation();
                       onAddBlock(moduleItem.id, lessonItem.id, "richtext");
                     }}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                    className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:bg-muted"
                   >
                     Quick Add Text Block
                   </button>
