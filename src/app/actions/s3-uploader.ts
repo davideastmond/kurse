@@ -75,11 +75,11 @@ export async function uploadToS3(
 
   // Read just the first 12 bytes to validate magic bytes before touching S3.
   if (file.size < 12) {
-    return { error: "File is too small to validate." };
+    return { error: "File must be at least 12 bytes to validate format." };
   }
   const headerBuffer = new Uint8Array(await file.slice(0, 12).arrayBuffer());
   if (!hasAllowedMagicBytes(headerBuffer)) {
-    return { error: "File content does not match an allowed media type." };
+    return { error: "File content does not match allowed media types (video, image, or audio)." };
   }
 
   const endpoint = process.env.CLOUD_FLARE_S3_ENDPOINT;
