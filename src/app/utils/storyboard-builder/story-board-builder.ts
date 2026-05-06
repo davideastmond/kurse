@@ -26,6 +26,15 @@ function isKnownBlockType(value: unknown): value is StoryboardBlockType {
   return (BLOCK_TYPES as readonly unknown[]).includes(value);
 }
 
+function isValidRichtextFontSize(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 9 &&
+    value <= 72
+  );
+}
+
 function cloneJsonValue<T>(value: T): T {
   if (typeof globalThis.structuredClone === "function") {
     return globalThis.structuredClone(value);
@@ -188,6 +197,16 @@ function validatePayload(
             "block duration is required.",
           );
         }
+
+        if (
+          typeof blockItem.fontSizePx !== "undefined" &&
+          !isValidRichtextFontSize(blockItem.fontSizePx)
+        ) {
+          pushInvalidField(
+            `${blockPath}.fontSizePx`,
+            "font size must be an integer between 9 and 72.",
+          );
+        }
       });
     });
   });
@@ -248,6 +267,7 @@ function buildStructureFromPayload(
           title: blockItem.title,
           detail: blockItem.detail,
           duration: blockItem.duration,
+          fontSizePx: blockItem.fontSizePx,
           videoUrl: blockItem.videoUrl,
           imageUrl: blockItem.imageUrl,
           audioUrl: blockItem.audioUrl,
@@ -292,6 +312,7 @@ function buildApiPayloadFromStructure(
                     title: blockEntity.title,
                     detail: blockEntity.detail,
                     duration: blockEntity.duration,
+                    fontSizePx: blockEntity.fontSizePx,
                     videoUrl: blockEntity.videoUrl,
                     imageUrl: blockEntity.imageUrl,
                     audioUrl: blockEntity.audioUrl,
