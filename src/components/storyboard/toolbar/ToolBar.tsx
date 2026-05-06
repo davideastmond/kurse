@@ -8,10 +8,17 @@ interface ToolBarProps {
   onAddModule?: () => void;
   onAddLesson?: () => void;
   onAddBlock?: (blockType: BlockType) => void;
+  onAddModuleEvaluation?: () => void;
+  onAddCourseEvaluation?: () => void;
 }
 
 interface ToolButton {
-  id: BlockType | "lesson" | "module";
+  id:
+    | BlockType
+    | "lesson"
+    | "module"
+    | "module_evaluation"
+    | "course_evaluation";
   label: string;
   icon: React.ReactNode;
   ariaLabel: string;
@@ -111,12 +118,34 @@ const toolButtons: ToolButton[] = [
       </SVGIcon>
     ),
   },
+  {
+    id: "module_evaluation",
+    label: "Module Evaluation",
+    ariaLabel: "Add a module evaluation",
+    icon: (
+      <SVGIcon>
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+      </SVGIcon>
+    ),
+  },
+  {
+    id: "course_evaluation",
+    label: "Course Evaluation",
+    ariaLabel: "Add a course evaluation",
+    icon: (
+      <SVGIcon>
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z" />
+      </SVGIcon>
+    ),
+  },
 ];
 
 export default function ToolBar({
   onAddModule,
   onAddLesson,
   onAddBlock,
+  onAddModuleEvaluation,
+  onAddCourseEvaluation,
 }: ToolBarProps) {
   const handleModuleClick = () => {
     onAddModule?.();
@@ -140,6 +169,10 @@ export default function ToolBar({
               handleModuleClick();
             } else if (button.id === "lesson") {
               handleLessonClick();
+            } else if (button.id === "module_evaluation") {
+              onAddModuleEvaluation?.();
+            } else if (button.id === "course_evaluation") {
+              onAddCourseEvaluation?.();
             } else {
               handleBlockClick(button.id as BlockType);
             }

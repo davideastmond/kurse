@@ -471,6 +471,17 @@ export default function Workspace({
     handleAddModule(userInput);
   }, [handleAddModule]);
 
+  const requestModuleEvaluationCreation = useCallback(() => {
+    const moduleTitle = selectedModule?.title ?? "(no module selected)";
+    window.alert(
+      `Module evaluation creation for "${moduleTitle}" is not yet implemented.`,
+    );
+  }, [selectedModule]);
+
+  const requestCourseEvaluationCreation = useCallback(() => {
+    window.alert("Course evaluation creation is not yet implemented.");
+  }, []);
+
   const handleAddLesson = useCallback(
     (targetModuleId?: string) => {
       const fallbackModuleId = workingCourse.modules[0]?.id;
@@ -761,6 +772,8 @@ export default function Workspace({
                   handleAddLesson();
                 }}
                 onAddBlock={handleAddBlock}
+                onAddModuleEvaluation={requestModuleEvaluationCreation}
+                onAddCourseEvaluation={requestCourseEvaluationCreation}
               />
             </div>
 
