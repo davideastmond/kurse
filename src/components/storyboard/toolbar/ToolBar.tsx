@@ -103,7 +103,7 @@ const toolButtons: ToolButton[] = [
   },
   {
     id: "quiz_inline",
-    label: "Quiz",
+    label: "Inline Quiz",
     ariaLabel: "Add inline quiz block",
     icon: (
       <SVGIcon>
