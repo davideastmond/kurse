@@ -1,4 +1,7 @@
-import type { ModuleEvaluation } from "@/shared/types/storyboard";
+import type {
+  CourseEvaluation,
+  ModuleEvaluation,
+} from "@/shared/types/storyboard";
 import {
   CourseStatus,
   StoryboardBlock,
@@ -23,6 +26,7 @@ type PersistedCourseMeta = {
   synopsis: string;
   audience: string;
   estimatedDuration: string;
+  courseEvaluation?: CourseEvaluation;
 };
 
 type PersistedModule = {

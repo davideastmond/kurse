@@ -110,6 +110,37 @@ function validatePayload(
     return errors;
   }
 
+  if (payload.courseEvaluation !== undefined) {
+    const ev = payload.courseEvaluation;
+    const evalPath = "course.courseEvaluation";
+
+    if (!isNonEmptyString(ev.id)) {
+      pushInvalidField(`${evalPath}.id`, "evaluation id is required.");
+    }
+
+    if (!isNonEmptyString(ev.title)) {
+      pushInvalidField(`${evalPath}.title`, "evaluation title is required.");
+    }
+
+    if (
+      !Number.isInteger(ev.passingScore) ||
+      ev.passingScore < 0 ||
+      ev.passingScore > 100
+    ) {
+      pushInvalidField(
+        `${evalPath}.passingScore`,
+        "evaluation passing score must be an integer 0–100.",
+      );
+    }
+
+    if (!Array.isArray(ev.questions)) {
+      pushInvalidField(
+        `${evalPath}.questions`,
+        "evaluation questions must be an array.",
+      );
+    }
+  }
+
   payload.modules.forEach((moduleItem, moduleIndex) => {
     const modulePath = `course.modules[${moduleIndex}]`;
 
@@ -259,6 +290,7 @@ function buildStructureFromPayload(
       synopsis: payload.synopsis,
       audience: payload.audience,
       estimatedDuration: payload.estimatedDuration,
+      courseEvaluation: payload.courseEvaluation,
     },
     moduleOrder: [],
     lessonOrderByModule: {},
