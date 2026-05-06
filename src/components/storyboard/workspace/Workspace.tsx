@@ -22,8 +22,6 @@ type WorkspaceProps = {
   courseRecordId: string;
 };
 
-type SelectionType = "COURSE_EVALUATION" | "MODULE" | "LESSON" | "BLOCK";
-
 type StoryboardSelection =
   | {
       type: "COURSE_EVALUATION";
