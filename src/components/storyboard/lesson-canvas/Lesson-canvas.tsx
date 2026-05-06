@@ -36,20 +36,6 @@ const BLOCK_TYPE_LABELS: Record<LessonCanvasBlock["type"], string> = {
   audio: "Audio",
 };
 
-function getRichtextFontSize(block: LessonCanvasBlock) {
-  if (
-    block.type === "richtext" &&
-    typeof block.fontSizePx === "number" &&
-    Number.isInteger(block.fontSizePx) &&
-    block.fontSizePx >= 9 &&
-    block.fontSizePx <= 72
-  ) {
-    return block.fontSizePx;
-  }
-
-  return 16;
-}
-
 function getBlockCardClasses(isSelected: boolean, isInteractive: boolean) {
   const interactiveClasses = isInteractive
     ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2"
@@ -380,14 +366,7 @@ export default function LessonCanvas({
                   <h3 className="text-base font-semibold text-foreground">
                     {block.title}
                   </h3>
-                  <p
-                    className="line-clamp-3 leading-6 text-muted-foreground"
-                    style={
-                      block.type === "richtext"
-                        ? { fontSize: `${getRichtextFontSize(block)}px` }
-                        : { fontSize: "0.875rem" }
-                    }
-                  >
+                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
                     {block.detail}
                   </p>
                 </div>
