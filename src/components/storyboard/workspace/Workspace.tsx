@@ -59,6 +59,7 @@ function createNewBlock(blockType: StoryboardBlockType) {
     title: DEFAULT_BLOCK_TITLE[blockType],
     detail: "Add details for this block.",
     duration: "5 min",
+    fontSizePx: blockType === "richtext" ? 16 : undefined,
   };
 }
 
