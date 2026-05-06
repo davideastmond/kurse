@@ -32,7 +32,7 @@ const BLOCK_TYPE_LABELS: Record<LessonCanvasBlock["type"], string> = {
   video: "Video",
   richtext: "Text",
   image: "Image",
-  quiz_inline: "Quiz",
+  quiz_inline: "Inline Quiz",
   audio: "Audio",
 };
 
