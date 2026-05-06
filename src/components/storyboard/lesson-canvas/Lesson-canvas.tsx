@@ -32,17 +32,17 @@ const BLOCK_TYPE_LABELS: Record<LessonCanvasBlock["type"], string> = {
   video: "Video",
   richtext: "Text",
   image: "Image",
-  quiz_inline: "Quiz",
+  quiz_inline: "Inline Quiz",
   audio: "Audio",
 };
 
 function getBlockCardClasses(isSelected: boolean, isInteractive: boolean) {
   const interactiveClasses = isInteractive
-    ? "cursor-pointer hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+    ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2"
     : "cursor-default";
 
   const selectedClasses = isSelected
-    ? "border-brand-400 bg-brand-50/70 shadow-sm"
+    ? "border-primary/60 bg-primary/10 shadow-sm"
     : "border-border bg-surface";
 
   return `flex w-full flex-col gap-3 rounded-3xl border p-4 text-left transition ${interactiveClasses} ${selectedClasses}`;
@@ -170,7 +170,7 @@ export default function LessonCanvas({
   const canvasClassName = [
     "rounded-4xl border border-border bg-surface p-5 shadow-sm transition-all",
     isSelected
-      ? "border-sky-300 bg-brand-50/45 ring-2 ring-sky-100 shadow-md"
+      ? "border-primary/60 bg-primary/10 ring-2 ring-primary/25 shadow-md"
       : "",
     className,
   ]

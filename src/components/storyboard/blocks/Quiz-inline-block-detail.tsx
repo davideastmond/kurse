@@ -36,7 +36,9 @@ export default function QuizInlineBlockDetail({
             Quiz
           </span>
         </div>
-        <p className="text-sm leading-6 text-muted-foreground">{block.detail}</p>
+        <p className="text-sm leading-6 text-muted-foreground">
+          {block.detail}
+        </p>
         <div className="space-y-3 rounded-3xl border border-violet-200 bg-violet-50/60 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">
             Quiz Configuration
@@ -45,7 +47,9 @@ export default function QuizInlineBlockDetail({
             <p className="font-medium text-foreground">
               Name: {block.quiz?.title || "Untitled quiz"}
             </p>
-            <p className="mt-1 text-muted-foreground">Questions: {questionCount}</p>
+            <p className="mt-1 text-muted-foreground">
+              Questions: {questionCount}
+            </p>
             <p className="mt-2 text-xs text-muted-foreground">
               Multiple-choice only. Each question has one correct answer.
             </p>
