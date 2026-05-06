@@ -1,3 +1,4 @@
+import type { ModuleEvaluation } from "@/shared/types/storyboard";
 import {
   CourseStatus,
   StoryboardBlock,
@@ -29,6 +30,7 @@ type PersistedModule = {
   title: string;
   progressLabel?: string;
   evaluationTitle?: string;
+  evaluation?: ModuleEvaluation;
 };
 
 type PersistedLesson = {

@@ -128,6 +128,37 @@ function validatePayload(
       pushInvalidField(`${modulePath}.title`, "module title is required.");
     }
 
+    if (moduleItem.evaluation !== undefined) {
+      const ev = moduleItem.evaluation;
+      const evalPath = `${modulePath}.evaluation`;
+
+      if (!isNonEmptyString(ev.id)) {
+        pushInvalidField(`${evalPath}.id`, "evaluation id is required.");
+      }
+
+      if (!isNonEmptyString(ev.title)) {
+        pushInvalidField(`${evalPath}.title`, "evaluation title is required.");
+      }
+
+      if (
+        !Number.isInteger(ev.passingScore) ||
+        ev.passingScore < 0 ||
+        ev.passingScore > 100
+      ) {
+        pushInvalidField(
+          `${evalPath}.passingScore`,
+          "evaluation passing score must be an integer 0–100.",
+        );
+      }
+
+      if (!Array.isArray(ev.questions)) {
+        pushInvalidField(
+          `${evalPath}.questions`,
+          "evaluation questions must be an array.",
+        );
+      }
+    }
+
     if (!Array.isArray(moduleItem.lessons)) {
       pushInvalidField(
         `${modulePath}.lessons`,
@@ -247,6 +278,10 @@ function buildStructureFromPayload(
       evaluationTitle: moduleItem.evaluationTitle,
     };
 
+    if (moduleItem.evaluation !== undefined) {
+      structure.modulesById[moduleItem.id]!.evaluation = moduleItem.evaluation;
+    }
+
     for (const lessonItem of moduleItem.lessons) {
       structure.lessonOrderByModule[moduleItem.id].push(lessonItem.id);
       structure.blockOrderByLesson[lessonItem.id] = [];
@@ -293,6 +328,7 @@ function buildApiPayloadFromStructure(
         title: moduleEntity.title,
         progressLabel: moduleEntity.progressLabel,
         evaluationTitle: moduleEntity.evaluationTitle,
+        evaluation: moduleEntity.evaluation,
         lessons: (structure.lessonOrderByModule[moduleId] ?? []).map(
           (lessonId) => {
             const lessonEntity = structure.lessonsById[lessonId];
@@ -385,6 +421,7 @@ export class StoryboardBuilder {
           title: moduleEntity.title,
           progressLabel: moduleEntity.progressLabel,
           evaluationTitle: moduleEntity.evaluationTitle,
+          evaluation: moduleEntity.evaluation,
           lessons,
         };
       },
