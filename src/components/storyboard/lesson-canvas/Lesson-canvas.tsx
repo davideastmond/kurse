@@ -36,13 +36,27 @@ const BLOCK_TYPE_LABELS: Record<LessonCanvasBlock["type"], string> = {
   audio: "Audio",
 };
 
+function getRichtextFontSize(block: LessonCanvasBlock) {
+  if (
+    block.type === "richtext" &&
+    typeof block.fontSizePx === "number" &&
+    Number.isInteger(block.fontSizePx) &&
+    block.fontSizePx >= 9 &&
+    block.fontSizePx <= 72
+  ) {
+    return block.fontSizePx;
+  }
+
+  return 16;
+}
+
 function getBlockCardClasses(isSelected: boolean, isInteractive: boolean) {
   const interactiveClasses = isInteractive
-    ? "cursor-pointer hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+    ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2"
     : "cursor-default";
 
   const selectedClasses = isSelected
-    ? "border-brand-400 bg-brand-50/70 shadow-sm"
+    ? "border-primary/60 bg-primary/10 shadow-sm"
     : "border-border bg-surface";
 
   return `flex w-full flex-col gap-3 rounded-3xl border p-4 text-left transition ${interactiveClasses} ${selectedClasses}`;
@@ -170,7 +184,7 @@ export default function LessonCanvas({
   const canvasClassName = [
     "rounded-4xl border border-border bg-surface p-5 shadow-sm transition-all",
     isSelected
-      ? "border-sky-300 bg-brand-50/45 ring-2 ring-sky-100 shadow-md"
+      ? "border-primary/60 bg-primary/10 ring-2 ring-primary/25 shadow-md"
       : "",
     className,
   ]
@@ -366,7 +380,14 @@ export default function LessonCanvas({
                   <h3 className="text-base font-semibold text-foreground">
                     {block.title}
                   </h3>
-                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
+                  <p
+                    className="line-clamp-3 leading-6 text-muted-foreground"
+                    style={
+                      block.type === "richtext"
+                        ? { fontSize: `${getRichtextFontSize(block)}px` }
+                        : { fontSize: "0.875rem" }
+                    }
+                  >
                     {block.detail}
                   </p>
                 </div>
