@@ -1,6 +1,9 @@
 import type { StoryboardRenderModule } from "@/app/utils/storyboard-builder/definitions";
 import type { LessonCanvasEditableValues } from "@/components/storyboard/lesson-canvas/Lesson-canvas";
-import type { StoryboardBlockType } from "@/shared/types/storyboard";
+import type {
+  ModuleEvaluation,
+  StoryboardBlockType,
+} from "@/shared/types/storyboard";
 
 export type ModuleSectionProps = {
   moduleItem: StoryboardRenderModule;
@@ -26,4 +29,9 @@ export type ModuleSectionProps = {
     lessonId: string,
     blockIds: string[],
   ) => void;
+  onUpdateModuleEvaluation: (
+    moduleId: string,
+    evaluation: ModuleEvaluation,
+  ) => void;
+  onDeleteModuleEvaluation: (moduleId: string) => void;
 };

@@ -9,6 +9,7 @@ import ModuleSection from "@/components/storyboard/module-section/Module-section
 import ToolBar from "@/components/storyboard/toolbar/ToolBar";
 import { courseStatusEnum } from "@/db/schema";
 import type {
+  ModuleEvaluation,
   StoryboardBlock,
   StoryboardBlockType,
 } from "@/shared/types/storyboard";
@@ -43,7 +44,7 @@ const DEFAULT_BLOCK_TITLE: Record<StoryboardBlockType, string> = {
 
 const COURSE_STATUS_OPTIONS = courseStatusEnum.enumValues;
 
-function createEntityId(prefix: "module" | "lesson" | "block") {
+function createEntityId(prefix: "module" | "lesson" | "block" | "evaluation") {
   const randomPart =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID().replaceAll("-", "").slice(0, 12)
@@ -472,11 +473,96 @@ export default function Workspace({
   }, [handleAddModule]);
 
   const requestModuleEvaluationCreation = useCallback(() => {
-    const moduleTitle = selectedModule?.title ?? "(no module selected)";
-    window.alert(
-      `Module evaluation creation for "${moduleTitle}" is not yet implemented.`,
-    );
-  }, [selectedModule]);
+    const fallbackModuleId = workingCourse.modules[0]?.id;
+    const moduleId = selectedModuleId ?? fallbackModuleId;
+
+    if (!moduleId) {
+      return;
+    }
+
+    applyCourseMutation((current) => {
+      const nextModules = current.modules.map((moduleItem) => {
+        if (moduleItem.id !== moduleId || moduleItem.evaluation) {
+          return moduleItem;
+        }
+
+        return {
+          ...moduleItem,
+          evaluation: {
+            id: createEntityId("evaluation"),
+            title: "Module Evaluation",
+            passingScore: 70,
+            questions: [],
+          },
+        };
+      });
+
+      return {
+        nextCourse: {
+          ...current,
+          modules: nextModules,
+        },
+        nextSelection: {
+          type: "MODULE",
+          moduleId,
+        },
+      };
+    });
+  }, [applyCourseMutation, selectedModuleId, workingCourse.modules]);
+
+  const handleUpdateModuleEvaluation = useCallback(
+    (moduleId: string, evaluation: ModuleEvaluation) => {
+      applyCourseMutation((current) => {
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            evaluation,
+          };
+        });
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
+  const handleDeleteModuleEvaluation = useCallback(
+    (moduleId: string) => {
+      applyCourseMutation((current) => {
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            evaluation: undefined,
+          };
+        });
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+          nextSelection: {
+            type: "MODULE",
+            moduleId,
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
 
   const requestCourseEvaluationCreation = useCallback(() => {
     window.alert("Course evaluation creation is not yet implemented.");
@@ -760,6 +846,8 @@ export default function Workspace({
                 onAddLesson={handleAddLesson}
                 onAddBlock={addBlockToLesson}
                 onDeleteBlocks={handleDeleteBlocks}
+                onUpdateModuleEvaluation={handleUpdateModuleEvaluation}
+                onDeleteModuleEvaluation={handleDeleteModuleEvaluation}
               />
             ))}
           </div>
