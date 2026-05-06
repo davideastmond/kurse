@@ -54,6 +54,14 @@ export type StoryboardModule = {
   progressLabel?: string;
   evaluationTitle?: string;
   lessons: StoryboardLesson[];
+  evaluation?: ModuleEvaluation;
+};
+
+export type ModuleEvaluation = {
+  id: string;
+  title: string;
+  passingScore: number;
+  questions: QuizQuestion[];
 };
 
 export type StoryboardCoursePayload = {
