@@ -4,30 +4,45 @@ import { saveCourseStoryboard } from "@/app/actions/courses";
 import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
 import { StoryboardBuilder } from "@/app/utils/storyboard-builder/story-board-builder";
 import BlockDetailRenderer from "@/components/storyboard/blocks/Block-detail-renderer";
+import CourseEvaluationCanvas from "@/components/storyboard/course-evaluation/Course-evaluation-canvas";
 import type { LessonCanvasEditableValues } from "@/components/storyboard/lesson-canvas/Lesson-canvas";
 import ModuleSection from "@/components/storyboard/module-section/Module-section";
 import ToolBar from "@/components/storyboard/toolbar/ToolBar";
 import { courseStatusEnum } from "@/db/schema";
 import type {
+  CourseEvaluation,
   ModuleEvaluation,
   StoryboardBlock,
   StoryboardBlockType,
 } from "@/shared/types/storyboard";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type WorkspaceProps = {
   initialCourse: ApiCoursePayload;
   courseRecordId: string;
 };
 
-type SelectionType = "MODULE" | "LESSON" | "BLOCK";
+type SelectionType = "COURSE_EVALUATION" | "MODULE" | "LESSON" | "BLOCK";
 
-type StoryboardSelection = {
-  type: SelectionType;
-  moduleId: string;
-  lessonId?: string;
-  blockId?: string;
-};
+type StoryboardSelection =
+  | {
+      type: "COURSE_EVALUATION";
+    }
+  | {
+      type: "MODULE";
+      moduleId: string;
+    }
+  | {
+      type: "LESSON";
+      moduleId: string;
+      lessonId: string;
+    }
+  | {
+      type: "BLOCK";
+      moduleId: string;
+      lessonId: string;
+      blockId: string;
+    };
 
 type SaveState = {
   status: "idle" | "saving" | "error";
@@ -74,6 +89,7 @@ export default function Workspace({
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
 
   const workingCourseRef = useRef<ApiCoursePayload>(initialCourse);
+  const courseEvaluationRef = useRef<HTMLDivElement | null>(null);
   const latestSavedVersionRef = useRef<number>(initialCourse.version);
   const pendingSaveRef = useRef<ApiCoursePayload | null>(null);
   const isSavingRef = useRef(false);
@@ -175,6 +191,16 @@ export default function Workspace({
       return null;
     }
 
+    if (selection.type === "COURSE_EVALUATION") {
+      if (!workingCourse.courseEvaluation) {
+        return null;
+      }
+
+      return {
+        type: "COURSE_EVALUATION" as const,
+      };
+    }
+
     const moduleItem = renderModel.modules.find(
       (candidate) => candidate.id === selection.moduleId,
     );
@@ -242,11 +268,24 @@ export default function Workspace({
       lessonId: lessonItem.id,
       blockId: blockItem.id,
     };
-  }, [renderModel, selection]);
+  }, [renderModel, selection, workingCourse.courseEvaluation]);
 
   const selectedModuleId = normalizedSelection?.moduleId;
   const selectedLessonId = normalizedSelection?.lessonId;
   const selectedBlockId = normalizedSelection?.blockId;
+  const isCourseEvaluationSelected =
+    normalizedSelection?.type === "COURSE_EVALUATION";
+
+  useEffect(() => {
+    if (!isCourseEvaluationSelected) {
+      return;
+    }
+
+    courseEvaluationRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [isCourseEvaluationSelected]);
 
   const selectedModule = useMemo(() => {
     if (!selectedModuleId || !renderModel) {
@@ -308,6 +347,16 @@ export default function Workspace({
     setSelection({
       type: "MODULE",
       moduleId,
+    });
+  }, []);
+
+  const selectCourseEvaluation = useCallback(() => {
+    if (!workingCourseRef.current.courseEvaluation) {
+      return;
+    }
+
+    setSelection({
+      type: "COURSE_EVALUATION",
     });
   }, []);
 
@@ -565,8 +614,49 @@ export default function Workspace({
   );
 
   const requestCourseEvaluationCreation = useCallback(() => {
-    window.alert("Course evaluation creation is not yet implemented.");
-  }, []);
+    if (workingCourseRef.current.courseEvaluation) {
+      return;
+    }
+
+    applyCourseMutation((current) => {
+      return {
+        nextCourse: {
+          ...current,
+          courseEvaluation: {
+            id: createEntityId("evaluation"),
+            title: "Course Evaluation",
+            passingScore: 70,
+            questions: [],
+          },
+        },
+        nextSelection: {
+          type: "COURSE_EVALUATION",
+        },
+      };
+    });
+  }, [applyCourseMutation]);
+
+  const handleUpdateCourseEvaluation = useCallback(
+    (evaluation: CourseEvaluation) => {
+      applyCourseMutation((current) => ({
+        nextCourse: {
+          ...current,
+          courseEvaluation: evaluation,
+        },
+      }));
+    },
+    [applyCourseMutation],
+  );
+
+  const handleDeleteCourseEvaluation = useCallback(() => {
+    applyCourseMutation((current) => ({
+      nextCourse: {
+        ...current,
+        courseEvaluation: undefined,
+      },
+      nextSelection: null,
+    }));
+  }, [applyCourseMutation]);
 
   const handleAddLesson = useCallback(
     (targetModuleId?: string) => {
@@ -831,6 +921,18 @@ export default function Workspace({
 
         <div className="grid flex-1 gap-6 overflow-hidden xl:min-h-0 xl:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="space-y-6 xl:min-h-0 xl:overflow-y-auto xl:pr-2">
+            {workingCourse.courseEvaluation ? (
+              <div ref={courseEvaluationRef}>
+                <CourseEvaluationCanvas
+                  evaluation={workingCourse.courseEvaluation}
+                  isSelected={isCourseEvaluationSelected}
+                  onSelect={selectCourseEvaluation}
+                  onUpdate={handleUpdateCourseEvaluation}
+                  onDelete={handleDeleteCourseEvaluation}
+                />
+              </div>
+            ) : null}
+
             {renderModel.modules.map((moduleItem) => (
               <ModuleSection
                 key={moduleItem.id}
@@ -871,6 +973,10 @@ export default function Workspace({
                   Current Selection
                 </p>
                 <p className="mt-2 truncate">
+                  Course Evaluation:{" "}
+                  {isCourseEvaluationSelected ? "Selected" : "None"}
+                </p>
+                <p className="mt-2 truncate">
                   Module: {selectedModule?.title ?? "None"}
                 </p>
                 <p className="mt-1 truncate">
@@ -882,6 +988,16 @@ export default function Workspace({
               </div>
 
               <div className="mt-4 rounded-2xl border border-border bg-muted/70 p-3 text-xs text-muted-foreground">
+                {workingCourse.courseEvaluation ? (
+                  <button
+                    type="button"
+                    onClick={selectCourseEvaluation}
+                    className="mb-3 w-full rounded-lg border border-violet-300/70 bg-violet-100/80 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.12em] text-violet-900 transition-colors hover:bg-violet-200/80 dark:border-violet-500/50 dark:bg-violet-900/30 dark:text-violet-200 dark:hover:bg-violet-900/45"
+                  >
+                    Jump To Course Evaluation
+                  </button>
+                ) : null}
+
                 <p className="font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Save Status
                 </p>
