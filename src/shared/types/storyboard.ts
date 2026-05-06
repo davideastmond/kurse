@@ -64,6 +64,13 @@ export type ModuleEvaluation = {
   questions: QuizQuestion[];
 };
 
+export type CourseEvaluation = {
+  id: string;
+  title: string;
+  passingScore: number;
+  questions: QuizQuestion[];
+};
+
 export type StoryboardCoursePayload = {
   id: string;
   title: string;
@@ -73,5 +80,6 @@ export type StoryboardCoursePayload = {
   synopsis: string;
   audience: string;
   estimatedDuration: string;
+  courseEvaluation?: CourseEvaluation;
   modules: StoryboardModule[];
 };
