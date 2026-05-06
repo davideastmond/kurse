@@ -46,6 +46,7 @@ type PersistedBlock = {
   title: string;
   detail: string;
   duration: string;
+  fontSizePx?: number;
   videoUrl?: string;
   imageUrl?: string;
   audioUrl?: string;
