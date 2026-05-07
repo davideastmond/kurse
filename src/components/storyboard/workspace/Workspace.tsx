@@ -509,6 +509,70 @@ export default function Workspace({
     [applyCourseMutation],
   );
 
+  const handleDeleteModule = useCallback(
+    (moduleId: string) => {
+      applyCourseMutation((current) => {
+        const moduleIndex = current.modules.findIndex(
+          (moduleItem) => moduleItem.id === moduleId,
+        );
+
+        if (moduleIndex === -1) {
+          return { nextCourse: current };
+        }
+
+        const nextModules = current.modules.filter(
+          (moduleItem) => moduleItem.id !== moduleId,
+        );
+
+        const shouldShiftSelection =
+          normalizedSelection?.type !== "COURSE_EVALUATION" &&
+          normalizedSelection?.moduleId === moduleId;
+
+        if (!shouldShiftSelection) {
+          return {
+            nextCourse: {
+              ...current,
+              modules: nextModules,
+            },
+          };
+        }
+
+        const fallbackModule =
+          nextModules[moduleIndex] ?? nextModules[moduleIndex - 1];
+
+        if (!fallbackModule) {
+          return {
+            nextCourse: {
+              ...current,
+              modules: nextModules,
+            },
+            nextSelection: null,
+          };
+        }
+
+        const fallbackLessonId = fallbackModule.lessons[0]?.id;
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+          nextSelection: fallbackLessonId
+            ? {
+                type: "LESSON",
+                moduleId: fallbackModule.id,
+                lessonId: fallbackLessonId,
+              }
+            : {
+                type: "MODULE",
+                moduleId: fallbackModule.id,
+              },
+        };
+      });
+    },
+    [applyCourseMutation, normalizedSelection],
+  );
+
   const requestModuleCreation = useCallback(() => {
     const userInput = window.prompt("Name your new module", "New Module");
 
@@ -520,12 +584,11 @@ export default function Workspace({
   }, [handleAddModule]);
 
   const requestModuleEvaluationCreation = useCallback(() => {
-    const fallbackModuleId = workingCourse.modules[0]?.id;
-    const moduleId = selectedModuleId ?? fallbackModuleId;
-
-    if (!moduleId) {
+    if (!selectedModuleId || !selectedModule || selectedModule.evaluation) {
       return;
     }
+
+    const moduleId = selectedModuleId;
 
     applyCourseMutation((current) => {
       const nextModules = current.modules.map((moduleItem) => {
@@ -555,7 +618,7 @@ export default function Workspace({
         },
       };
     });
-  }, [applyCourseMutation, selectedModuleId, workingCourse.modules]);
+  }, [applyCourseMutation, selectedModule, selectedModuleId]);
 
   const handleUpdateModuleEvaluation = useCallback(
     (moduleId: string, evaluation: ModuleEvaluation) => {
@@ -746,34 +809,13 @@ export default function Workspace({
 
   const handleAddBlock = useCallback(
     (blockType: StoryboardBlockType) => {
-      const moduleId = selectedModuleId ?? workingCourse.modules[0]?.id;
-
-      if (!moduleId) {
+      if (!selectedModuleId || !selectedLessonId) {
         return;
       }
 
-      const moduleItem = workingCourse.modules.find(
-        (candidate) => candidate.id === moduleId,
-      );
-
-      if (!moduleItem) {
-        return;
-      }
-
-      const lessonId = selectedLessonId ?? moduleItem.lessons[0]?.id;
-
-      if (!lessonId) {
-        return;
-      }
-
-      addBlockToLesson(moduleId, lessonId, blockType);
+      addBlockToLesson(selectedModuleId, selectedLessonId, blockType);
     },
-    [
-      addBlockToLesson,
-      selectedLessonId,
-      selectedModuleId,
-      workingCourse.modules,
-    ],
+    [addBlockToLesson, selectedLessonId, selectedModuleId],
   );
 
   const handleDeleteBlocks = useCallback(
@@ -859,6 +901,11 @@ export default function Workspace({
     (count, moduleItem) => count + moduleItem.lessons.length,
     0,
   );
+  const canAddBlock = Boolean(selectedModule && selectedLesson);
+  const canAddModuleEvaluation = Boolean(
+    selectedModule && !selectedModule.evaluation,
+  );
+  const canAddCourseEvaluation = !workingCourse.courseEvaluation;
 
   return (
     <div className="min-h-screen bg-background p-6 xl:h-screen xl:overflow-hidden">
@@ -938,6 +985,7 @@ export default function Workspace({
                 selectedModuleId={selectedModuleId}
                 selectedLessonId={selectedLessonId}
                 selectedBlockId={selectedBlockId}
+                onDeleteModule={handleDeleteModule}
                 onSelectModule={selectModule}
                 onSelectLesson={selectLesson}
                 onSelectBlock={selectBlock}
@@ -962,6 +1010,9 @@ export default function Workspace({
                 onAddBlock={handleAddBlock}
                 onAddModuleEvaluation={requestModuleEvaluationCreation}
                 onAddCourseEvaluation={requestCourseEvaluationCreation}
+                canAddBlock={canAddBlock}
+                canAddModuleEvaluation={canAddModuleEvaluation}
+                canAddCourseEvaluation={canAddCourseEvaluation}
               />
             </div>
 
