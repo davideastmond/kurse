@@ -10,6 +10,7 @@ export default function ModuleSection({
   selectedModuleId,
   selectedLessonId,
   selectedBlockId,
+  onDeleteModule,
   onSelectModule,
   onSelectLesson,
   onSelectBlock,
@@ -105,6 +106,23 @@ export default function ModuleSection({
                 className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:bg-muted"
               >
                 Rename
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const shouldDelete = window.confirm(
+                    `Delete module \"${moduleItem.title}\"? This removes all lessons and blocks in this module.`,
+                  );
+
+                  if (!shouldDelete) {
+                    return;
+                  }
+
+                  onDeleteModule(moduleItem.id);
+                }}
+                className="rounded-full border border-danger/40 bg-danger/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-danger transition hover:bg-danger/20"
+              >
+                Delete
               </button>
             </div>
           )}

@@ -10,6 +10,7 @@ export type ModuleSectionProps = {
   selectedModuleId?: string;
   selectedLessonId?: string;
   selectedBlockId?: string;
+  onDeleteModule: (moduleId: string) => void;
   onSelectModule: (moduleId: string) => void;
   onSelectLesson: (moduleId: string, lessonId: string) => void;
   onSelectBlock: (moduleId: string, lessonId: string, blockId: string) => void;
