@@ -4,7 +4,12 @@ import { getDashboardPathForRole } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
 import CourseRunner from "@/components/course-runner/Course-runner";
 import { getDb } from "@/db";
-import { enrollments, lessonProgress } from "@/db/schema";
+import {
+  enrollments,
+  evaluationAttempts,
+  evaluations,
+  lessonProgress,
+} from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 
@@ -104,11 +109,34 @@ export default async function LearningStagePage({
 
   const completedLessonIds = progressRows.map((row) => row.lessonId);
 
+  const passedAttemptRows = await db
+    .select({
+      scope: evaluations.scope,
+      moduleId: evaluations.moduleId,
+    })
+    .from(evaluationAttempts)
+    .innerJoin(evaluations, eq(evaluations.id, evaluationAttempts.evaluationId))
+    .where(
+      and(
+        eq(evaluationAttempts.enrollmentId, enrollment.id),
+        eq(evaluationAttempts.passed, true),
+      ),
+    );
+
+  const passedModuleEvalIds = passedAttemptRows
+    .filter((r) => r.scope === "MODULE" && r.moduleId)
+    .map((r) => r.moduleId!);
+
+  const courseEvalPassed = passedAttemptRows.some((r) => r.scope === "COURSE");
+
   return (
     <CourseRunner
       enrollmentId={enrollment.id}
+      courseRecordId={course.id}
       course={coursePayload}
       completedLessonIds={completedLessonIds}
+      passedModuleEvalIds={passedModuleEvalIds}
+      courseEvalPassed={courseEvalPassed}
     />
   );
 }
