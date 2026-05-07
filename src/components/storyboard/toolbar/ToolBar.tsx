@@ -10,6 +10,9 @@ interface ToolBarProps {
   onAddBlock?: (blockType: BlockType) => void;
   onAddModuleEvaluation?: () => void;
   onAddCourseEvaluation?: () => void;
+  canAddBlock?: boolean;
+  canAddModuleEvaluation?: boolean;
+  canAddCourseEvaluation?: boolean;
 }
 
 interface ToolButton {
@@ -146,6 +149,9 @@ export default function ToolBar({
   onAddBlock,
   onAddModuleEvaluation,
   onAddCourseEvaluation,
+  canAddBlock = true,
+  canAddModuleEvaluation = true,
+  canAddCourseEvaluation = true,
 }: ToolBarProps) {
   const handleModuleClick = () => {
     onAddModule?.();
@@ -159,34 +165,76 @@ export default function ToolBar({
     onAddBlock?.(blockType);
   };
 
+  const isButtonDisabled = (buttonId: ToolButton["id"]) => {
+    if (buttonId === "module_evaluation") {
+      return !canAddModuleEvaluation;
+    }
+
+    if (buttonId === "course_evaluation") {
+      return !canAddCourseEvaluation;
+    }
+
+    if (
+      buttonId === "video" ||
+      buttonId === "richtext" ||
+      buttonId === "image" ||
+      buttonId === "audio" ||
+      buttonId === "quiz_inline"
+    ) {
+      return !canAddBlock;
+    }
+
+    return false;
+  };
+
   return (
     <div className="flex flex-wrap items-stretch gap-2 rounded-lg border border-border bg-surface p-2 shadow-sm">
-      {toolButtons.map((button) => (
-        <button
-          key={button.id}
-          onClick={() => {
-            if (button.id === "module") {
-              handleModuleClick();
-            } else if (button.id === "lesson") {
-              handleLessonClick();
-            } else if (button.id === "module_evaluation") {
-              onAddModuleEvaluation?.();
-            } else if (button.id === "course_evaluation") {
-              onAddCourseEvaluation?.();
-            } else {
-              handleBlockClick(button.id as BlockType);
-            }
-          }}
-          className="group flex min-w-36 flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:bg-muted/80 sm:justify-start"
-          aria-label={button.ariaLabel}
-          title={button.label}
-        >
-          <span className="shrink-0 text-muted-foreground transition-colors group-hover:text-foreground">
-            {button.icon}
-          </span>
-          <span className="hidden sm:inline">{button.label}</span>
-        </button>
-      ))}
+      {toolButtons.map((button) => {
+        const isDisabled = isButtonDisabled(button.id);
+
+        return (
+          <button
+            key={button.id}
+            type="button"
+            onClick={() => {
+              if (isDisabled) {
+                return;
+              }
+
+              if (button.id === "module") {
+                handleModuleClick();
+              } else if (button.id === "lesson") {
+                handleLessonClick();
+              } else if (button.id === "module_evaluation") {
+                onAddModuleEvaluation?.();
+              } else if (button.id === "course_evaluation") {
+                onAddCourseEvaluation?.();
+              } else {
+                handleBlockClick(button.id as BlockType);
+              }
+            }}
+            disabled={isDisabled}
+            className={`group flex min-w-36 flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all sm:justify-start ${
+              isDisabled
+                ? "cursor-not-allowed text-muted-foreground/50"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80"
+            }`}
+            aria-label={button.ariaLabel}
+            title={button.label}
+          >
+            <span
+              className={`shrink-0 transition-colors ${
+                isDisabled
+                  ? "text-muted-foreground/50"
+                  : "text-muted-foreground group-hover:text-foreground"
+              }`}
+            >
+              {button.icon}
+            </span>
+            <span className="hidden sm:inline">{button.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
