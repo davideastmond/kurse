@@ -5,204 +5,374 @@ import type {
   CourseRunnerProps,
   RunnerLessonRef,
 } from "@/components/course-runner/definitions";
+import EvaluationRunner from "@/components/course-runner/Evaluation-runner";
 import LessonStage from "@/components/course-runner/Lesson-stage";
 import RunnerSidebar from "@/components/course-runner/Runner-sidebar";
+import type { StoryboardModule } from "@/shared/types/storyboard";
 import { useMemo, useState, useTransition } from "react";
 
-function deriveUnlockedLessons(
-  orderedLessons: RunnerLessonRef[],
+// ---------------------------------------------------------------------------
+// Unlock / progress engine
+// ---------------------------------------------------------------------------
+
+type ProgressState = {
+  unlockedLessonIds: Set<string>;
+  unlockedModuleEvalIds: Set<string>;
+  courseEvalUnlocked: boolean;
+};
+
+function deriveProgressState(
+  modules: StoryboardModule[],
   completedLessonIds: Set<string>,
-) {
-  if (orderedLessons.length === 0) {
-    return new Set<string>();
-  }
+  passedModuleEvalIds: Set<string>,
+): ProgressState {
+  const unlockedLessonIds = new Set<string>();
+  const unlockedModuleEvalIds = new Set<string>();
 
-  const unlocked = new Set<string>();
+  for (let i = 0; i < modules.length; i++) {
+    const mod = modules[i]!;
+    const prev = i > 0 ? modules[i - 1]! : null;
 
-  for (const entry of orderedLessons) {
-    unlocked.add(entry.lesson.id);
+    // A module is accessible only if the previous module is fully done.
+    if (prev) {
+      const prevLessonsDone = prev.lessons.every((l) =>
+        completedLessonIds.has(l.id),
+      );
+      const prevEvalPassed = !prev.evaluation || passedModuleEvalIds.has(prev.id);
+      if (!prevLessonsDone || !prevEvalPassed) {
+        break;
+      }
+    }
 
-    if (!completedLessonIds.has(entry.lesson.id)) {
-      break;
+    // Unlock lessons sequentially within this module.
+    for (const lesson of mod.lessons) {
+      unlockedLessonIds.add(lesson.id);
+      if (!completedLessonIds.has(lesson.id)) {
+        break;
+      }
+    }
+
+    // Module eval is unlocked once all lessons in this module are done.
+    if (
+      mod.evaluation &&
+      mod.lessons.length > 0 &&
+      mod.lessons.every((l) => completedLessonIds.has(l.id))
+    ) {
+      unlockedModuleEvalIds.add(mod.id);
     }
   }
 
-  return unlocked;
+  const courseEvalUnlocked =
+    modules.length > 0 &&
+    modules.every((mod) => {
+      const lessonsDone = mod.lessons.every((l) => completedLessonIds.has(l.id));
+      const evalPassed = !mod.evaluation || passedModuleEvalIds.has(mod.id);
+      return lessonsDone && evalPassed;
+    });
+
+  return { unlockedLessonIds, unlockedModuleEvalIds, courseEvalUnlocked };
 }
 
-function getLaunchLessonId(
-  lessons: RunnerLessonRef[],
-  completedLessonIds: Set<string>,
-): string | null {
-  if (lessons.length === 0) {
-    return null;
+// ---------------------------------------------------------------------------
+// Navigation target helpers
+// ---------------------------------------------------------------------------
+
+type NavTarget =
+  | { type: "lesson"; lessonId: string }
+  | { type: "module_eval"; moduleId: string }
+  | { type: "course_eval" }
+  | { type: "overview" };
+
+function getAfterLessonTarget(
+  modules: StoryboardModule[],
+  moduleId: string,
+  lessonId: string,
+  hasCourseEval: boolean,
+): NavTarget {
+  const modIndex = modules.findIndex((m) => m.id === moduleId);
+  if (modIndex === -1) return { type: "overview" };
+
+  const mod = modules[modIndex]!;
+  const lessonIndex = mod.lessons.findIndex((l) => l.id === lessonId);
+  const nextInModule = mod.lessons[lessonIndex + 1] ?? null;
+
+  if (nextInModule) {
+    return { type: "lesson", lessonId: nextInModule.id };
   }
 
-  const firstIncomplete = lessons.find(
-    (entry) => !completedLessonIds.has(entry.lesson.id),
-  );
+  // Last lesson of this module.
+  if (mod.evaluation) {
+    return { type: "module_eval", moduleId: mod.id };
+  }
 
-  return firstIncomplete?.lesson.id ?? lessons[0].lesson.id;
+  // No eval — look for next module's first lesson.
+  const nextMod = modules[modIndex + 1] ?? null;
+  if (nextMod && nextMod.lessons.length > 0) {
+    return { type: "lesson", lessonId: nextMod.lessons[0]!.id };
+  }
+
+  if (hasCourseEval) {
+    return { type: "course_eval" };
+  }
+
+  return { type: "overview" };
 }
+
+function getAfterModuleEvalTarget(
+  modules: StoryboardModule[],
+  moduleId: string,
+  hasCourseEval: boolean,
+): NavTarget {
+  const modIndex = modules.findIndex((m) => m.id === moduleId);
+  const nextMod = modIndex >= 0 ? (modules[modIndex + 1] ?? null) : null;
+
+  if (nextMod && nextMod.lessons.length > 0) {
+    return { type: "lesson", lessonId: nextMod.lessons[0]!.id };
+  }
+
+  if (hasCourseEval) {
+    return { type: "course_eval" };
+  }
+
+  return { type: "overview" };
+}
+
+// ---------------------------------------------------------------------------
+// Runner view state
+// ---------------------------------------------------------------------------
+
+type RunnerView =
+  | { type: "overview" }
+  | { type: "lesson"; lessonId: string }
+  | { type: "module_eval"; moduleId: string }
+  | { type: "course_eval" };
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export default function CourseRunner({
   enrollmentId,
+  courseRecordId,
   course,
   completedLessonIds,
+  passedModuleEvalIds,
+  courseEvalPassed: initialCourseEvalPassed,
 }: CourseRunnerProps) {
   const [isPending, startTransition] = useTransition();
-  const [view, setView] = useState<"overview" | "lesson">("overview");
+  const [currentView, setCurrentView] = useState<RunnerView>({ type: "overview" });
   const [completedSet, setCompletedSet] = useState<Set<string>>(
     new Set(completedLessonIds),
   );
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
-  const [inlineQuizGateByBlockId, setInlineQuizGateByBlockId] = useState<
-    Record<string, boolean>
-  >({});
+  const [passedModuleEvalSet, setPassedModuleEvalSet] = useState<Set<string>>(
+    new Set(passedModuleEvalIds),
+  );
+  const [courseEvalPassed, setCourseEvalPassed] = useState(initialCourseEvalPassed);
+  const [inlineQuizGates, setInlineQuizGates] = useState<Record<string, boolean>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const lessonRefs = useMemo(() => {
-    const flattened: RunnerLessonRef[] = [];
-
-    course.modules.forEach((moduleItem) => {
-      moduleItem.lessons.forEach((lesson) => {
-        flattened.push({
-          moduleId: moduleItem.id,
-          moduleTitle: moduleItem.title,
+  // Flatten all lessons across modules with stable index.
+  const lessonRefs = useMemo<RunnerLessonRef[]>(() => {
+    const flat: RunnerLessonRef[] = [];
+    course.modules.forEach((mod) => {
+      mod.lessons.forEach((lesson) => {
+        flat.push({
+          moduleId: mod.id,
+          moduleTitle: mod.title,
           lesson,
-          index: flattened.length,
+          index: flat.length,
         });
       });
     });
-
-    return flattened;
+    return flat;
   }, [course.modules]);
 
+  // Unlock / progress derivation.
+  const { unlockedLessonIds, unlockedModuleEvalIds, courseEvalUnlocked } =
+    useMemo(
+      () => deriveProgressState(course.modules, completedSet, passedModuleEvalSet),
+      [course.modules, completedSet, passedModuleEvalSet],
+    );
+
+  // Current lesson/module context.
   const selectedLessonRef = useMemo(() => {
-    if (!selectedLessonId) {
-      return null;
-    }
+    if (currentView.type !== "lesson") return null;
+    return lessonRefs.find((e) => e.lesson.id === currentView.lessonId) ?? null;
+  }, [currentView, lessonRefs]);
 
-    return (
-      lessonRefs.find((entry) => entry.lesson.id === selectedLessonId) ?? null
+  const selectedModule = useMemo<StoryboardModule | null>(() => {
+    if (currentView.type === "lesson" && selectedLessonRef) {
+      return (
+        course.modules.find((m) => m.id === selectedLessonRef.moduleId) ?? null
+      );
+    }
+    if (currentView.type === "module_eval") {
+      return course.modules.find((m) => m.id === currentView.moduleId) ?? null;
+    }
+    return null;
+  }, [course.modules, currentView, selectedLessonRef]);
+
+  // Inline quiz gating.
+  const currentLessonHasQuizGates = useMemo(() => {
+    if (!selectedLessonRef) return false;
+    return selectedLessonRef.lesson.blocks.some((b) => b.type === "quiz_inline");
+  }, [selectedLessonRef]);
+
+  const allQuizGatesPassed = useMemo(() => {
+    if (!selectedLessonRef) return true;
+    const quizBlocks = selectedLessonRef.lesson.blocks.filter(
+      (b) => b.type === "quiz_inline",
     );
-  }, [lessonRefs, selectedLessonId]);
+    if (quizBlocks.length === 0) return true;
+    return quizBlocks.every((b) => inlineQuizGates[b.id] === true);
+  }, [inlineQuizGates, selectedLessonRef]);
 
-  const unlockedLessonIds = useMemo(() => {
-    return deriveUnlockedLessons(lessonRefs, completedSet);
-  }, [completedSet, lessonRefs]);
-
-  const launchLessonId = useMemo(() => {
-    return getLaunchLessonId(lessonRefs, completedSet);
-  }, [completedSet, lessonRefs]);
-
-  const startButtonLabel = useMemo(() => {
-    if (lessonRefs.length === 0) {
-      return "View";
-    }
-
-    if (completedSet.size === lessonRefs.length) {
-      return "Review";
-    }
-
-    if (completedSet.size > 0) {
-      return "Continue";
-    }
-
-    return "Begin";
-  }, [completedSet.size, lessonRefs.length]);
-
-  const currentLessonHasInlineQuizGates = useMemo(() => {
-    const lesson = selectedLessonRef?.lesson;
-
-    if (!lesson) {
-      return false;
-    }
-
-    return lesson.blocks.some((block) => block.type === "quiz_inline");
-  }, [selectedLessonRef?.lesson]);
-
-  const allInlineQuizGatesPassed = useMemo(() => {
-    const lesson = selectedLessonRef?.lesson;
-
-    if (!lesson) {
-      return true;
-    }
-
-    const quizBlocks = lesson.blocks.filter(
-      (block) => block.type === "quiz_inline",
+  // After-lesson navigation target.
+  const afterLessonTarget = useMemo<NavTarget>(() => {
+    if (!selectedLessonRef) return { type: "overview" };
+    return getAfterLessonTarget(
+      course.modules,
+      selectedLessonRef.moduleId,
+      selectedLessonRef.lesson.id,
+      Boolean(course.courseEvaluation),
     );
-
-    if (quizBlocks.length === 0) {
-      return true;
-    }
-
-    return quizBlocks.every(
-      (block) => inlineQuizGateByBlockId[block.id] === true,
-    );
-  }, [inlineQuizGateByBlockId, selectedLessonRef?.lesson]);
-
-  const nextLessonRef = useMemo(() => {
-    if (!selectedLessonRef) {
-      return null;
-    }
-
-    return lessonRefs[selectedLessonRef.index + 1] ?? null;
-  }, [lessonRefs, selectedLessonRef]);
-
-  const previousLessonRef = useMemo(() => {
-    if (!selectedLessonRef) {
-      return null;
-    }
-
-    return lessonRefs[selectedLessonRef.index - 1] ?? null;
-  }, [lessonRefs, selectedLessonRef]);
+  }, [course.modules, course.courseEvaluation, selectedLessonRef]);
 
   const canGoNext =
-    (!currentLessonHasInlineQuizGates || allInlineQuizGatesPassed) &&
+    currentView.type === "lesson" &&
+    (!currentLessonHasQuizGates || allQuizGatesPassed) &&
     !isPending;
 
-  const canGoPrevious = !!previousLessonRef && !isPending;
+  const canGoPreviousLesson =
+    currentView.type === "lesson" &&
+    selectedLessonRef !== null &&
+    selectedLessonRef.index > 0 &&
+    !isPending;
 
+  const nextLabel =
+    afterLessonTarget.type === "overview" ? "Mark Complete" : "Next";
+
+  // Progress bar (lessons only for now).
   const progressPercent =
     lessonRefs.length === 0
       ? 0
       : Math.round((completedSet.size / lessonRefs.length) * 100);
 
-  const selectedModule = useMemo(() => {
-    if (!selectedLessonRef) {
-      return null;
+  // Start button label.
+  const startButtonLabel = useMemo(() => {
+    if (lessonRefs.length === 0) return "View";
+    if (completedSet.size === lessonRefs.length) return "Review";
+    if (completedSet.size > 0) return "Continue";
+    return "Begin";
+  }, [completedSet.size, lessonRefs.length]);
+
+  const launchLessonId = useMemo(() => {
+    if (lessonRefs.length === 0) return null;
+    const first = lessonRefs.find((e) => !completedSet.has(e.lesson.id));
+    return first?.lesson.id ?? lessonRefs[0]!.lesson.id;
+  }, [completedSet, lessonRefs]);
+
+  function navigate(target: NavTarget) {
+    setInlineQuizGates({});
+    setErrorMessage(null);
+    if (target.type === "overview") {
+      setCurrentView({ type: "overview" });
+    } else if (target.type === "lesson") {
+      setCurrentView({ type: "lesson", lessonId: target.lessonId });
+    } else if (target.type === "module_eval") {
+      setCurrentView({ type: "module_eval", moduleId: target.moduleId });
+    } else {
+      setCurrentView({ type: "course_eval" });
     }
+  }
 
-    return (
-      course.modules.find(
-        (moduleItem) => moduleItem.id === selectedLessonRef.moduleId,
-      ) ?? null
+  function handleLessonNext() {
+    if (!selectedLessonRef || !canGoNext) return;
+
+    setErrorMessage(null);
+
+    startTransition(async () => {
+      const result = await completeLessonProgress({
+        enrollmentId,
+        lessonId: selectedLessonRef.lesson.id,
+        courseSlug: course.slug,
+      });
+
+      if (!result.ok) {
+        setErrorMessage(result.message);
+        return;
+      }
+
+      setCompletedSet((prev) => {
+        const next = new Set(prev);
+        next.add(selectedLessonRef.lesson.id);
+        return next;
+      });
+
+      navigate(afterLessonTarget);
+    });
+  }
+
+  function handleLessonPrevious() {
+    if (!selectedLessonRef || !canGoPreviousLesson) return;
+    const prev = lessonRefs[selectedLessonRef.index - 1];
+    if (prev) navigate({ type: "lesson", lessonId: prev.lesson.id });
+  }
+
+  function handleModuleEvalPass(moduleId: string) {
+    setPassedModuleEvalSet((prev) => {
+      const next = new Set(prev);
+      next.add(moduleId);
+      return next;
+    });
+    navigate(
+      getAfterModuleEvalTarget(
+        course.modules,
+        moduleId,
+        Boolean(course.courseEvaluation),
+      ),
     );
-  }, [course.modules, selectedLessonRef]);
+  }
 
-  const nextLabel = nextLessonRef ? "Next" : "Mark Complete";
+  function handleCourseEvalPass() {
+    setCourseEvalPassed(true);
+    navigate({ type: "overview" });
+  }
 
   return (
     <div className="grid min-h-[calc(100vh-6rem)] grid-cols-1 gap-5 p-4 lg:grid-cols-[320px_minmax(0,1fr)]">
       <RunnerSidebar
         course={course}
         lessons={lessonRefs}
-        selectedLessonId={selectedLessonId}
+        selectedLessonId={
+          currentView.type === "lesson" ? currentView.lessonId : null
+        }
+        selectedModuleEvalId={
+          currentView.type === "module_eval" ? currentView.moduleId : null
+        }
+        courseEvalSelected={currentView.type === "course_eval"}
         unlockedLessonIds={unlockedLessonIds}
         completedLessonIds={completedSet}
+        unlockedModuleEvalIds={unlockedModuleEvalIds}
+        passedModuleEvalIds={passedModuleEvalSet}
+        courseEvalUnlocked={courseEvalUnlocked}
+        courseEvalPassed={courseEvalPassed}
         onSelectLesson={(lessonId) => {
-          if (!unlockedLessonIds.has(lessonId)) {
-            return;
-          }
-
-          setView("lesson");
-          setSelectedLessonId(lessonId);
-          setInlineQuizGateByBlockId({});
+          if (!unlockedLessonIds.has(lessonId)) return;
+          navigate({ type: "lesson", lessonId });
+        }}
+        onSelectModuleEval={(moduleId) => {
+          if (!unlockedModuleEvalIds.has(moduleId)) return;
+          navigate({ type: "module_eval", moduleId });
+        }}
+        onSelectCourseEval={() => {
+          if (!courseEvalUnlocked) return;
+          navigate({ type: "course_eval" });
         }}
       />
 
       <main className="space-y-4 rounded-3xl border border-border bg-muted/20 p-4 sm:p-6">
+        {/* Progress bar */}
         <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
           <div className="flex items-center justify-between gap-4">
             <h1 className="text-xl font-semibold tracking-tight text-foreground">
@@ -220,7 +390,8 @@ export default function CourseRunner({
           </div>
         </div>
 
-        {view === "overview" ? (
+        {/* Overview / welcome screen */}
+        {currentView.type === "overview" ? (
           <section className="space-y-4 rounded-3xl border border-border bg-surface p-6">
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">
               Welcome to {course.title}
@@ -233,17 +404,17 @@ export default function CourseRunner({
                 Estimated duration: {course.estimatedDuration}
               </p>
             ) : null}
+            {courseEvalPassed ? (
+              <p className="text-sm font-medium text-success">
+                Course completed!
+              </p>
+            ) : null}
             <button
               type="button"
               disabled={!launchLessonId}
               onClick={() => {
-                if (!launchLessonId) {
-                  return;
-                }
-
-                setSelectedLessonId(launchLessonId);
-                setInlineQuizGateByBlockId({});
-                setView("lesson");
+                if (!launchLessonId) return;
+                navigate({ type: "lesson", lessonId: launchLessonId });
               }}
               className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -252,69 +423,46 @@ export default function CourseRunner({
           </section>
         ) : null}
 
-        {view === "lesson" && selectedLessonRef && selectedModule ? (
+        {/* Lesson view */}
+        {currentView.type === "lesson" && selectedLessonRef && selectedModule ? (
           <LessonStage
             module={selectedModule}
             lesson={selectedLessonRef.lesson}
-            canGoPrevious={canGoPrevious}
+            canGoPrevious={canGoPreviousLesson}
             canGoNext={canGoNext}
             nextLabel={nextLabel}
             isSavingProgress={isPending}
-            onPrevious={() => {
-              if (!previousLessonRef) {
-                return;
-              }
-
-              setSelectedLessonId(previousLessonRef.lesson.id);
-              setInlineQuizGateByBlockId({});
-            }}
-            onNext={() => {
-              if (!selectedLessonRef || !canGoNext) {
-                return;
-              }
-
-              setErrorMessage(null);
-
-              startTransition(async () => {
-                const result = await completeLessonProgress({
-                  enrollmentId,
-                  lessonId: selectedLessonRef.lesson.id,
-                  courseSlug: course.slug,
-                });
-
-                if (!result.ok) {
-                  setErrorMessage(result.message);
-                  return;
-                }
-
-                setCompletedSet((current) => {
-                  const next = new Set(current);
-                  next.add(selectedLessonRef.lesson.id);
-                  return next;
-                });
-
-                if (nextLessonRef) {
-                  setSelectedLessonId(nextLessonRef.lesson.id);
-                } else {
-                  setView("overview");
-                }
-
-                setInlineQuizGateByBlockId({});
-              });
-            }}
+            onPrevious={handleLessonPrevious}
+            onNext={handleLessonNext}
             onInlineQuizGateChange={(blockId, passed) => {
-              setInlineQuizGateByBlockId((current) => ({
-                ...current,
-                [blockId]: passed,
-              }));
+              setInlineQuizGates((prev) => ({ ...prev, [blockId]: passed }));
             }}
           />
         ) : null}
 
-        {view === "lesson" && !selectedLessonRef ? (
-          <section className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning">
-            This lesson is currently unavailable.
-          </section>
+        {/* Module evaluation view */}
+        {currentView.type === "module_eval" && selectedModule?.evaluation ? (
+          <EvaluationRunner
+            evaluation={selectedModule.evaluation}
+            enrollmentId={enrollmentId}
+            courseRecordId={courseRecordId}
+            courseSlug={course.slug}
+            scope="MODULE"
+            moduleId={selectedModule.id}
+            onPass={() => handleModuleEvalPass(selectedModule.id)}
+          />
+        ) : null}
+
+        {/* Course evaluation view */}
+        {currentView.type === "course_eval" && course.courseEvaluation ? (
+          <EvaluationRunner
+            evaluation={course.courseEvaluation}
+            enrollmentId={enrollmentId}
+            courseRecordId={courseRecordId}
+            courseSlug={course.slug}
+            scope="COURSE"
+            onPass={handleCourseEvalPass}
+          />
         ) : null}
 
         {errorMessage ? (
