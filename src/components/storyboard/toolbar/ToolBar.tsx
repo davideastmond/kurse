@@ -8,10 +8,17 @@ interface ToolBarProps {
   onAddModule?: () => void;
   onAddLesson?: () => void;
   onAddBlock?: (blockType: BlockType) => void;
+  onAddModuleEvaluation?: () => void;
+  onAddCourseEvaluation?: () => void;
 }
 
 interface ToolButton {
-  id: BlockType | "lesson" | "module";
+  id:
+    | BlockType
+    | "lesson"
+    | "module"
+    | "module_evaluation"
+    | "course_evaluation";
   label: string;
   icon: React.ReactNode;
   ariaLabel: string;
@@ -103,11 +110,31 @@ const toolButtons: ToolButton[] = [
   },
   {
     id: "quiz_inline",
-    label: "Quiz",
+    label: "Inline Quiz",
     ariaLabel: "Add inline quiz block",
     icon: (
       <SVGIcon>
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9h-7c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h7c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z" />
+      </SVGIcon>
+    ),
+  },
+  {
+    id: "module_evaluation",
+    label: "Module Evaluation",
+    ariaLabel: "Add a module evaluation",
+    icon: (
+      <SVGIcon>
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+      </SVGIcon>
+    ),
+  },
+  {
+    id: "course_evaluation",
+    label: "Course Evaluation",
+    ariaLabel: "Add a course evaluation",
+    icon: (
+      <SVGIcon>
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z" />
       </SVGIcon>
     ),
   },
@@ -117,6 +144,8 @@ export default function ToolBar({
   onAddModule,
   onAddLesson,
   onAddBlock,
+  onAddModuleEvaluation,
+  onAddCourseEvaluation,
 }: ToolBarProps) {
   const handleModuleClick = () => {
     onAddModule?.();
@@ -140,6 +169,10 @@ export default function ToolBar({
               handleModuleClick();
             } else if (button.id === "lesson") {
               handleLessonClick();
+            } else if (button.id === "module_evaluation") {
+              onAddModuleEvaluation?.();
+            } else if (button.id === "course_evaluation") {
+              onAddCourseEvaluation?.();
             } else {
               handleBlockClick(button.id as BlockType);
             }

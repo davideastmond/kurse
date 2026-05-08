@@ -1,3 +1,7 @@
+import type {
+  CourseEvaluation,
+  ModuleEvaluation,
+} from "@/shared/types/storyboard";
 import {
   CourseStatus,
   StoryboardBlock,
@@ -22,6 +26,7 @@ type PersistedCourseMeta = {
   synopsis: string;
   audience: string;
   estimatedDuration: string;
+  courseEvaluation?: CourseEvaluation;
 };
 
 type PersistedModule = {
@@ -29,6 +34,7 @@ type PersistedModule = {
   title: string;
   progressLabel?: string;
   evaluationTitle?: string;
+  evaluation?: ModuleEvaluation;
 };
 
 type PersistedLesson = {
@@ -46,6 +52,7 @@ type PersistedBlock = {
   title: string;
   detail: string;
   duration: string;
+  fontSizePx?: number;
   videoUrl?: string;
   imageUrl?: string;
   audioUrl?: string;

@@ -1,6 +1,7 @@
 "use client";
 
 import LessonCanvas from "@/components/storyboard/lesson-canvas/Lesson-canvas";
+import ModuleEvaluationCanvas from "@/components/storyboard/module-evaluation/Module-evaluation-canvas";
 import type { ModuleSectionProps } from "@/components/storyboard/module-section/definitions";
 import { useState } from "react";
 
@@ -17,6 +18,8 @@ export default function ModuleSection({
   onAddLesson,
   onAddBlock,
   onDeleteBlocks,
+  onUpdateModuleEvaluation,
+  onDeleteModuleEvaluation,
 }: ModuleSectionProps) {
   const isModuleSelected = selectedModuleId === moduleItem.id;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -181,6 +184,15 @@ export default function ModuleSection({
             </div>
           );
         })}
+
+        {moduleItem.evaluation ? (
+          <ModuleEvaluationCanvas
+            evaluation={moduleItem.evaluation}
+            moduleId={moduleItem.id}
+            onUpdate={onUpdateModuleEvaluation}
+            onDelete={onDeleteModuleEvaluation}
+          />
+        ) : null}
       </div>
     </section>
   );

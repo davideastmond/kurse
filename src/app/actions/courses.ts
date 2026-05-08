@@ -28,6 +28,7 @@ export type SaveCourseStoryboardResult =
 
 type PersistedCourseStructure = {
   courseId: string;
+  courseEvaluation?: ApiCoursePayload["courseEvaluation"];
   modules: ApiCoursePayload["modules"];
   metadata: {
     synopsis: string;
@@ -82,6 +83,7 @@ function toPersistedStructure(
 ): PersistedCourseStructure {
   return {
     courseId: payload.id,
+    courseEvaluation: payload.courseEvaluation,
     modules: payload.modules,
     metadata: {
       synopsis: payload.synopsis,

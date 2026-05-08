@@ -33,6 +33,7 @@ export type StoryboardBlock = {
   title: string;
   detail: string;
   duration: string;
+  fontSizePx?: number;
   videoUrl?: string;
   imageUrl?: string;
   audioUrl?: string;
@@ -53,6 +54,21 @@ export type StoryboardModule = {
   progressLabel?: string;
   evaluationTitle?: string;
   lessons: StoryboardLesson[];
+  evaluation?: ModuleEvaluation;
+};
+
+export type ModuleEvaluation = {
+  id: string;
+  title: string;
+  passingScore: number;
+  questions: QuizQuestion[];
+};
+
+export type CourseEvaluation = {
+  id: string;
+  title: string;
+  passingScore: number;
+  questions: QuizQuestion[];
 };
 
 export type StoryboardCoursePayload = {
@@ -64,5 +80,6 @@ export type StoryboardCoursePayload = {
   synopsis: string;
   audience: string;
   estimatedDuration: string;
+  courseEvaluation?: CourseEvaluation;
   modules: StoryboardModule[];
 };

@@ -26,6 +26,15 @@ function isKnownBlockType(value: unknown): value is StoryboardBlockType {
   return (BLOCK_TYPES as readonly unknown[]).includes(value);
 }
 
+function isValidRichtextFontSize(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 9 &&
+    value <= 72
+  );
+}
+
 function cloneJsonValue<T>(value: T): T {
   if (typeof globalThis.structuredClone === "function") {
     return globalThis.structuredClone(value);
@@ -101,6 +110,37 @@ function validatePayload(
     return errors;
   }
 
+  if (payload.courseEvaluation !== undefined) {
+    const ev = payload.courseEvaluation;
+    const evalPath = "course.courseEvaluation";
+
+    if (!isNonEmptyString(ev.id)) {
+      pushInvalidField(`${evalPath}.id`, "evaluation id is required.");
+    }
+
+    if (!isNonEmptyString(ev.title)) {
+      pushInvalidField(`${evalPath}.title`, "evaluation title is required.");
+    }
+
+    if (
+      !Number.isInteger(ev.passingScore) ||
+      ev.passingScore < 0 ||
+      ev.passingScore > 100
+    ) {
+      pushInvalidField(
+        `${evalPath}.passingScore`,
+        "evaluation passing score must be an integer 0–100.",
+      );
+    }
+
+    if (!Array.isArray(ev.questions)) {
+      pushInvalidField(
+        `${evalPath}.questions`,
+        "evaluation questions must be an array.",
+      );
+    }
+  }
+
   payload.modules.forEach((moduleItem, moduleIndex) => {
     const modulePath = `course.modules[${moduleIndex}]`;
 
@@ -117,6 +157,37 @@ function validatePayload(
 
     if (!isNonEmptyString(moduleItem.title)) {
       pushInvalidField(`${modulePath}.title`, "module title is required.");
+    }
+
+    if (moduleItem.evaluation !== undefined) {
+      const ev = moduleItem.evaluation;
+      const evalPath = `${modulePath}.evaluation`;
+
+      if (!isNonEmptyString(ev.id)) {
+        pushInvalidField(`${evalPath}.id`, "evaluation id is required.");
+      }
+
+      if (!isNonEmptyString(ev.title)) {
+        pushInvalidField(`${evalPath}.title`, "evaluation title is required.");
+      }
+
+      if (
+        !Number.isInteger(ev.passingScore) ||
+        ev.passingScore < 0 ||
+        ev.passingScore > 100
+      ) {
+        pushInvalidField(
+          `${evalPath}.passingScore`,
+          "evaluation passing score must be an integer 0–100.",
+        );
+      }
+
+      if (!Array.isArray(ev.questions)) {
+        pushInvalidField(
+          `${evalPath}.questions`,
+          "evaluation questions must be an array.",
+        );
+      }
     }
 
     if (!Array.isArray(moduleItem.lessons)) {
@@ -188,6 +259,16 @@ function validatePayload(
             "block duration is required.",
           );
         }
+
+        if (
+          typeof blockItem.fontSizePx !== "undefined" &&
+          !isValidRichtextFontSize(blockItem.fontSizePx)
+        ) {
+          pushInvalidField(
+            `${blockPath}.fontSizePx`,
+            "font size must be an integer between 9 and 72.",
+          );
+        }
       });
     });
   });
@@ -209,6 +290,7 @@ function buildStructureFromPayload(
       synopsis: payload.synopsis,
       audience: payload.audience,
       estimatedDuration: payload.estimatedDuration,
+      courseEvaluation: payload.courseEvaluation,
     },
     moduleOrder: [],
     lessonOrderByModule: {},
@@ -227,6 +309,10 @@ function buildStructureFromPayload(
       progressLabel: moduleItem.progressLabel,
       evaluationTitle: moduleItem.evaluationTitle,
     };
+
+    if (moduleItem.evaluation !== undefined) {
+      structure.modulesById[moduleItem.id]!.evaluation = moduleItem.evaluation;
+    }
 
     for (const lessonItem of moduleItem.lessons) {
       structure.lessonOrderByModule[moduleItem.id].push(lessonItem.id);
@@ -248,6 +334,7 @@ function buildStructureFromPayload(
           title: blockItem.title,
           detail: blockItem.detail,
           duration: blockItem.duration,
+          fontSizePx: blockItem.fontSizePx,
           videoUrl: blockItem.videoUrl,
           imageUrl: blockItem.imageUrl,
           audioUrl: blockItem.audioUrl,
@@ -273,6 +360,7 @@ function buildApiPayloadFromStructure(
         title: moduleEntity.title,
         progressLabel: moduleEntity.progressLabel,
         evaluationTitle: moduleEntity.evaluationTitle,
+        evaluation: moduleEntity.evaluation,
         lessons: (structure.lessonOrderByModule[moduleId] ?? []).map(
           (lessonId) => {
             const lessonEntity = structure.lessonsById[lessonId];
@@ -292,6 +380,7 @@ function buildApiPayloadFromStructure(
                     title: blockEntity.title,
                     detail: blockEntity.detail,
                     duration: blockEntity.duration,
+                    fontSizePx: blockEntity.fontSizePx,
                     videoUrl: blockEntity.videoUrl,
                     imageUrl: blockEntity.imageUrl,
                     audioUrl: blockEntity.audioUrl,
@@ -364,6 +453,7 @@ export class StoryboardBuilder {
           title: moduleEntity.title,
           progressLabel: moduleEntity.progressLabel,
           evaluationTitle: moduleEntity.evaluationTitle,
+          evaluation: moduleEntity.evaluation,
           lessons,
         };
       },

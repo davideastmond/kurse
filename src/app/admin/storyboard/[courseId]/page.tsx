@@ -9,6 +9,7 @@ type StoryboardPageProps = {
 
 type SeededCourseStructure = {
   courseId?: string;
+  courseEvaluation?: ApiCoursePayload["courseEvaluation"];
   modules?: ApiCoursePayload["modules"];
   metadata?: {
     synopsis?: string;
@@ -39,6 +40,7 @@ function toApiCoursePayload(row: SeededCourseRecord): ApiCoursePayload {
     synopsis: structure.metadata?.synopsis ?? row.description,
     audience: structure.metadata?.audience ?? "",
     estimatedDuration: structure.metadata?.estimatedDuration ?? "",
+    courseEvaluation: structure.courseEvaluation,
     modules: Array.isArray(structure.modules) ? structure.modules : [],
   };
 }
