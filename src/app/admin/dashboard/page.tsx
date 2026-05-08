@@ -33,6 +33,7 @@ type SeededCourseRecord = {
   description: string;
   status: CourseStatus;
   version: number;
+  createdById: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   structure: SeededCourseStructure | null;
@@ -80,6 +81,10 @@ function getSort(value: string | undefined): SortOption {
   return SORT_OPTIONS.some((option) => option.value === value)
     ? (value as SortOption)
     : "updatedAt_desc";
+}
+
+function getCreatedByMe(value: string | undefined) {
+  return value === "1";
 }
 
 function EmptyState() {
@@ -149,10 +154,13 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
 
   const resolvedSearchParams = ((await searchParams) ?? {}) as SearchParams;
   getPageSize(getStringParam(resolvedSearchParams.pageSize));
-  const query =
-    getStringParam(resolvedSearchParams.q)?.trim().toLowerCase() ?? "";
+  const query = getStringParam(resolvedSearchParams.q)?.trim() ?? "";
+  const queryLower = query.toLowerCase();
   const status = getStatus(getStringParam(resolvedSearchParams.status));
   const sort = getSort(getStringParam(resolvedSearchParams.sort));
+  const createdByMe = getCreatedByMe(
+    getStringParam(resolvedSearchParams.createdByMe),
+  );
 
   const allCourses = (await fetchSeededCourses()) as
     | SeededCourseRecord[]
@@ -163,17 +171,22 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
   }
 
   const dashboardCourses = allCourses.map(mapSeededCourseToDashboardCourse);
+  const createdByIdByCourseId = new Map(
+    allCourses.map((course) => [course.id, course.createdById]),
+  );
 
   const filteredCourses = dashboardCourses
     .filter((course) => {
       const matchesQuery =
-        query.length === 0 ||
-        course.title.toLowerCase().includes(query) ||
-        course.slug.toLowerCase().includes(query) ||
-        course.audience.toLowerCase().includes(query);
+        queryLower.length === 0 ||
+        course.title.toLowerCase().includes(queryLower);
       const matchesStatus = status.length === 0 || course.status === status;
+      const createdById = createdByIdByCourseId.get(course.id);
+      const matchesCreator =
+        !createdByMe ||
+        (Boolean(session.user.id) && createdById === session.user.id);
 
-      return matchesQuery && matchesStatus;
+      return matchesQuery && matchesStatus && matchesCreator;
     })
     .sort((left, right) => {
       switch (sort) {
@@ -197,6 +210,81 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
     <main className="min-h-screen bg-background px-6 py-10 text-foreground md:px-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
         <NewCourseButton />
+
+        <form
+          className="rounded-3xl border border-border bg-surface p-4"
+          method="get"
+        >
+          <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] md:items-end">
+            <label className="flex flex-col gap-1 text-sm font-medium text-foreground">
+              Search title
+              <input
+                type="search"
+                name="q"
+                defaultValue={query}
+                placeholder="Search courses by title"
+                className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-brand-500"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm font-medium text-foreground">
+              Status
+              <select
+                name="status"
+                defaultValue={status}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-brand-500"
+              >
+                <option value="">All statuses</option>
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm font-medium text-foreground">
+              Sort
+              <select
+                name="sort"
+                defaultValue={sort}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-brand-500"
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="inline-flex items-center gap-2 pb-2 text-sm font-medium text-foreground">
+              <input
+                type="checkbox"
+                name="createdByMe"
+                value="1"
+                defaultChecked={createdByMe}
+                className="h-4 w-4 rounded border-border"
+              />
+              Created by me
+            </label>
+
+            <div className="flex items-center gap-2 pb-1">
+              <button
+                type="submit"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+              >
+                Apply
+              </button>
+              <Link
+                href="/admin/dashboard"
+                className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted"
+              >
+                Reset
+              </Link>
+            </div>
+          </div>
+        </form>
 
         {filteredCourses.length > 0 ? (
           <section className="grid gap-4 md:grid-cols-[minmax(0,2fr)_repeat(2,minmax(0,1fr))]">
