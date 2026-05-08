@@ -238,15 +238,25 @@ function validatePayload(
           blockIds.add(blockItem.id);
         }
 
-        if (!isNonEmptyString(blockItem.title)) {
-          pushInvalidField(`${blockPath}.title`, "block title is required.");
-        }
-
         if (!isKnownBlockType(blockItem.type)) {
           pushInvalidField(
             `${blockPath}.type`,
             `block type must be one of: ${BLOCK_TYPES.join(", ")}.`,
           );
+        }
+
+        if (blockItem.type === "richtext") {
+          if (
+            typeof blockItem.title !== "undefined" &&
+            typeof blockItem.title !== "string"
+          ) {
+            pushInvalidField(
+              `${blockPath}.title`,
+              "block title must be a string when provided.",
+            );
+          }
+        } else if (!isNonEmptyString(blockItem.title)) {
+          pushInvalidField(`${blockPath}.title`, "block title is required.");
         }
 
         if (!isNonEmptyString(blockItem.detail)) {

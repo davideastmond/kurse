@@ -124,6 +124,8 @@ export default function LessonStage({
         ) : null}
 
         {lesson.blocks.map((block) => {
+          const hasBlockTitle = block.title.trim().length > 0;
+
           if (block.type === "quiz_inline") {
             return (
               <InlineQuizRunner
@@ -138,9 +140,11 @@ export default function LessonStage({
 
           return (
             <article key={block.id} className="space-y-3 bg-surface p-5">
-              <h3 className="text-lg font-semibold text-foreground">
-                {block.title}
-              </h3>
+              {hasBlockTitle ? (
+                <h3 className="text-lg font-semibold text-foreground">
+                  {block.title}
+                </h3>
+              ) : null}
 
               {block.type === "image" && block.imageUrl ? (
                 <img
