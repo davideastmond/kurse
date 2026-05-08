@@ -245,7 +245,11 @@ function validatePayload(
           );
         }
 
-        if (blockItem.type === "richtext") {
+        const titleIsOptional =
+          blockItem.type === "richtext" ||
+          blockItem.type === "image" ||
+          blockItem.type === "video";
+        if (titleIsOptional) {
           if (
             typeof blockItem.title !== "undefined" &&
             typeof blockItem.title !== "string"
@@ -259,8 +263,18 @@ function validatePayload(
           pushInvalidField(`${blockPath}.title`, "block title is required.");
         }
 
-        if (!isNonEmptyString(blockItem.detail)) {
+        const detailIsOptional = blockItem.type === "image";
+        if (!detailIsOptional && !isNonEmptyString(blockItem.detail)) {
           pushInvalidField(`${blockPath}.detail`, "block detail is required.");
+        } else if (
+          detailIsOptional &&
+          typeof blockItem.detail !== "undefined" &&
+          typeof blockItem.detail !== "string"
+        ) {
+          pushInvalidField(
+            `${blockPath}.detail`,
+            "block detail must be a string when provided.",
+          );
         }
 
         if (!isNonEmptyString(blockItem.duration)) {

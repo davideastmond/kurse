@@ -65,8 +65,8 @@ export default function ImageBlockDetail({
 
     if (moduleId && lessonId && onUpdateBlock) {
       onUpdateBlock(moduleId, lessonId, block.id, {
-        title: trimmedTitle || block.title,
-        detail: trimmedDetail || block.detail,
+        title: trimmedTitle,
+        detail: trimmedDetail,
       });
     }
     setIsEditing(false);
@@ -116,7 +116,7 @@ export default function ImageBlockDetail({
         {block.imageUrl ? (
           <Image
             src={block.imageUrl}
-            alt={block.title}
+            alt={block.title || "image"}
             className="h-auto max-h-72 w-full rounded-xl object-contain"
             width={1200}
             height={900}
@@ -183,12 +183,20 @@ export default function ImageBlockDetail({
   return (
     <div className="mt-4 space-y-4">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-xl font-semibold text-foreground">{block.title}</h3>
+        {block.title ? (
+          <h3 className="text-xl font-semibold text-foreground">
+            {block.title}
+          </h3>
+        ) : null}
         <span className="rounded-full bg-fuchsia-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-fuchsia-700">
           Image
         </span>
       </div>
-      <p className="text-sm leading-6 text-muted-foreground">{block.detail}</p>
+      {block.detail ? (
+        <p className="text-sm leading-6 text-muted-foreground">
+          {block.detail}
+        </p>
+      ) : null}
 
       {imageCanvas}
 
