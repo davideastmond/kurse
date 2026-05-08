@@ -102,8 +102,11 @@ export async function fetchSeededCourses() {
       description: courses.description,
       status: courses.status,
       version: courses.version,
+      createdById: courses.createdById,
+      createdAt: courses.createdAt,
       updatedAt: courses.updatedAt,
       title: courses.title,
+      structure: courses.structure,
     })
     .from(courses);
 }
