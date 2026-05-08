@@ -127,11 +127,11 @@ export default function InlineQuizRunner({
 
       {!quizState.allCorrect ? (
         <p className="text-sm font-medium text-warning">
-          Lesson gate is locked until all inline quiz questions are correct.
+          Complete the inline quiz to unlock the next lesson.
         </p>
       ) : (
         <p className="text-sm font-medium text-success">
-          Inline quiz complete. You can continue.
+          Inline quiz complete. Let's continue.
         </p>
       )}
     </section>
