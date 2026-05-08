@@ -19,11 +19,8 @@ export default function RunnerSidebar({
   onSelectCourseEval,
 }: RunnerSidebarProps) {
   return (
-    <aside className="sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border border-border bg-surface p-4 shadow-sm">
+    <aside className="sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto bg-surface p-4 shadow-sm">
       <header className="space-y-2 border-b border-border pb-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Course Runner
-        </p>
         <h2 className="text-lg font-semibold leading-6 text-foreground">
           {course.title}
         </h2>

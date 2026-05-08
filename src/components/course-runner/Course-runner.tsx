@@ -38,7 +38,8 @@ function deriveProgressState(
       const prevLessonsDone = prev.lessons.every((l) =>
         completedLessonIds.has(l.id),
       );
-      const prevEvalPassed = !prev.evaluation || passedModuleEvalIds.has(prev.id);
+      const prevEvalPassed =
+        !prev.evaluation || passedModuleEvalIds.has(prev.id);
       if (!prevLessonsDone || !prevEvalPassed) {
         break;
       }
@@ -65,7 +66,9 @@ function deriveProgressState(
   const courseEvalUnlocked =
     modules.length > 0 &&
     modules.every((mod) => {
-      const lessonsDone = mod.lessons.every((l) => completedLessonIds.has(l.id));
+      const lessonsDone = mod.lessons.every((l) =>
+        completedLessonIds.has(l.id),
+      );
       const evalPassed = !mod.evaluation || passedModuleEvalIds.has(mod.id);
       return lessonsDone && evalPassed;
     });
@@ -160,15 +163,21 @@ export default function CourseRunner({
   courseEvalPassed: initialCourseEvalPassed,
 }: CourseRunnerProps) {
   const [isPending, startTransition] = useTransition();
-  const [currentView, setCurrentView] = useState<RunnerView>({ type: "overview" });
+  const [currentView, setCurrentView] = useState<RunnerView>({
+    type: "overview",
+  });
   const [completedSet, setCompletedSet] = useState<Set<string>>(
     new Set(completedLessonIds),
   );
   const [passedModuleEvalSet, setPassedModuleEvalSet] = useState<Set<string>>(
     new Set(passedModuleEvalIds),
   );
-  const [courseEvalPassed, setCourseEvalPassed] = useState(initialCourseEvalPassed);
-  const [inlineQuizGates, setInlineQuizGates] = useState<Record<string, boolean>>({});
+  const [courseEvalPassed, setCourseEvalPassed] = useState(
+    initialCourseEvalPassed,
+  );
+  const [inlineQuizGates, setInlineQuizGates] = useState<
+    Record<string, boolean>
+  >({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Flatten all lessons across modules with stable index.
@@ -190,7 +199,8 @@ export default function CourseRunner({
   // Unlock / progress derivation.
   const { unlockedLessonIds, unlockedModuleEvalIds, courseEvalUnlocked } =
     useMemo(
-      () => deriveProgressState(course.modules, completedSet, passedModuleEvalSet),
+      () =>
+        deriveProgressState(course.modules, completedSet, passedModuleEvalSet),
       [course.modules, completedSet, passedModuleEvalSet],
     );
 
@@ -215,7 +225,9 @@ export default function CourseRunner({
   // Inline quiz gating.
   const currentLessonHasQuizGates = useMemo(() => {
     if (!selectedLessonRef) return false;
-    return selectedLessonRef.lesson.blocks.some((b) => b.type === "quiz_inline");
+    return selectedLessonRef.lesson.blocks.some(
+      (b) => b.type === "quiz_inline",
+    );
   }, [selectedLessonRef]);
 
   const allQuizGatesPassed = useMemo(() => {
@@ -371,7 +383,7 @@ export default function CourseRunner({
         }}
       />
 
-      <main className="space-y-4 rounded-3xl border border-border bg-muted/20 p-4 sm:p-6">
+      <main className="space-y-4 bg-muted/20 p-4 sm:p-6">
         {/* Progress bar */}
         <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
           <div className="flex items-center justify-between gap-4">
@@ -424,7 +436,9 @@ export default function CourseRunner({
         ) : null}
 
         {/* Lesson view */}
-        {currentView.type === "lesson" && selectedLessonRef && selectedModule ? (
+        {currentView.type === "lesson" &&
+        selectedLessonRef &&
+        selectedModule ? (
           <LessonStage
             module={selectedModule}
             lesson={selectedLessonRef.lesson}

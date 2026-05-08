@@ -172,7 +172,7 @@ export default function LessonStage({
                             className="absolute inset-0 h-full w-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
-                            title={block.title}
+                            title={block.title || "video"}
                           />
                         </div>
                       );
