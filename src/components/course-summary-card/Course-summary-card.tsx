@@ -19,7 +19,7 @@ export default function CourseSummaryCard({ course }: CourseSummaryCardProps) {
   return (
     <Link
       href={`/admin/storyboard/${course.slug}`}
-      className={`group rounded-4xl border border-border p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}
+      className={`group  border border-border p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -41,9 +41,6 @@ export default function CourseSummaryCard({ course }: CourseSummaryCardProps) {
         <span>{course.estimatedDuration}</span>
         <span>{course.enrolledCount} learners</span>
       </div>
-      <p className="mt-8 text-sm font-semibold text-brand-800 transition group-hover:translate-x-1">
-        Open storyboard
-      </p>
     </Link>
   );
 }
