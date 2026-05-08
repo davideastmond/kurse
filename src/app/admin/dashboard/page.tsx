@@ -184,7 +184,7 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
       const createdById = createdByIdByCourseId.get(course.id);
       const matchesCreator =
         !createdByMe ||
-        (Boolean(session.user.id) && createdById === session.user.id);
+        (Boolean(session?.user?.id) && createdById === session?.user?.id);
 
       return matchesQuery && matchesStatus && matchesCreator;
     })
