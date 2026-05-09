@@ -102,7 +102,7 @@ export default function LessonStage({
 }: LessonStageProps) {
   return (
     <section className="space-y-5">
-      <header className="bg-surface p-6">
+      <header className="p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {module.title}
         </p>
