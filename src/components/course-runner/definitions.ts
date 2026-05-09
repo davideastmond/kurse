@@ -38,6 +38,7 @@ export type RunnerSidebarProps = {
   passedModuleEvalIds: Set<string>;
   courseEvalUnlocked: boolean;
   courseEvalPassed: boolean;
+  progressPercent: number;
   onSelectLesson: (lessonId: string) => void;
   onSelectModuleEval: (moduleId: string) => void;
   onSelectCourseEval: () => void;
