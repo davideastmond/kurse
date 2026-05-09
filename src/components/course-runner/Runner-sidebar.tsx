@@ -14,6 +14,7 @@ export default function RunnerSidebar({
   passedModuleEvalIds,
   courseEvalUnlocked,
   courseEvalPassed,
+  progressPercent,
   onSelectLesson,
   onSelectModuleEval,
   onSelectCourseEval,
@@ -24,6 +25,22 @@ export default function RunnerSidebar({
         <h2 className="text-lg font-semibold leading-6 text-foreground">
           {course.title}
         </h2>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Progress
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground">
+              {progressPercent}%
+            </span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
       </header>
 
       <div className="mt-4 space-y-3">
