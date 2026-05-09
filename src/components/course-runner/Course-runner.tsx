@@ -369,6 +369,7 @@ export default function CourseRunner({
         passedModuleEvalIds={passedModuleEvalSet}
         courseEvalUnlocked={courseEvalUnlocked}
         courseEvalPassed={courseEvalPassed}
+        progressPercent={progressPercent}
         onSelectLesson={(lessonId) => {
           if (!unlockedLessonIds.has(lessonId)) return;
           navigate({ type: "lesson", lessonId });
@@ -384,24 +385,6 @@ export default function CourseRunner({
       />
 
       <main className="space-y-4 bg-muted/20 p-4 sm:p-6">
-        {/* Progress bar */}
-        <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
-          <div className="flex items-center justify-between gap-4">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              {course.title}
-            </h1>
-            <span className="text-sm font-semibold text-muted-foreground">
-              {progressPercent}% complete
-            </span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
         {/* Overview / welcome screen */}
         {currentView.type === "overview" ? (
           <section className="space-y-4 rounded-3xl border border-border bg-surface p-6">
