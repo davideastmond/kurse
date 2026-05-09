@@ -76,7 +76,7 @@ export default async function Navbar() {
                 </p>
 
                 {role === "ADMIN" && (
-                  <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-800">
+                  <span className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-400">
                     Admin
                   </span>
                 )}
