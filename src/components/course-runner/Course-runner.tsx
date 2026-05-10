@@ -163,6 +163,7 @@ export default function CourseRunner({
   courseEvalPassed: initialCourseEvalPassed,
 }: CourseRunnerProps) {
   const [isPending, startTransition] = useTransition();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<RunnerView>({
     type: "overview",
   });
@@ -287,6 +288,7 @@ export default function CourseRunner({
   function navigate(target: NavTarget) {
     setInlineQuizGates({});
     setErrorMessage(null);
+    setIsSidebarOpen(false);
     if (target.type === "overview") {
       setCurrentView({ type: "overview" });
     } else if (target.type === "lesson") {
@@ -353,36 +355,111 @@ export default function CourseRunner({
 
   return (
     <div className="grid min-h-[calc(100vh-6rem)] grid-cols-1 gap-5 p-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <RunnerSidebar
-        course={course}
-        lessons={lessonRefs}
-        selectedLessonId={
-          currentView.type === "lesson" ? currentView.lessonId : null
-        }
-        selectedModuleEvalId={
-          currentView.type === "module_eval" ? currentView.moduleId : null
-        }
-        courseEvalSelected={currentView.type === "course_eval"}
-        unlockedLessonIds={unlockedLessonIds}
-        completedLessonIds={completedSet}
-        unlockedModuleEvalIds={unlockedModuleEvalIds}
-        passedModuleEvalIds={passedModuleEvalSet}
-        courseEvalUnlocked={courseEvalUnlocked}
-        courseEvalPassed={courseEvalPassed}
-        progressPercent={progressPercent}
-        onSelectLesson={(lessonId) => {
-          if (!unlockedLessonIds.has(lessonId)) return;
-          navigate({ type: "lesson", lessonId });
-        }}
-        onSelectModuleEval={(moduleId) => {
-          if (!unlockedModuleEvalIds.has(moduleId)) return;
-          navigate({ type: "module_eval", moduleId });
-        }}
-        onSelectCourseEval={() => {
-          if (!courseEvalUnlocked) return;
-          navigate({ type: "course_eval" });
-        }}
-      />
+      <div className="lg:hidden">
+        <button
+          type="button"
+          onClick={() => setIsSidebarOpen(true)}
+          className="flex w-full items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-foreground shadow-sm"
+          aria-label="Open table of contents"
+        >
+          <span>Table of contents</span>
+          <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
+            Menu
+          </span>
+        </button>
+      </div>
+
+      <div className="hidden lg:block">
+        <RunnerSidebar
+          course={course}
+          lessons={lessonRefs}
+          selectedLessonId={
+            currentView.type === "lesson" ? currentView.lessonId : null
+          }
+          selectedModuleEvalId={
+            currentView.type === "module_eval" ? currentView.moduleId : null
+          }
+          courseEvalSelected={currentView.type === "course_eval"}
+          unlockedLessonIds={unlockedLessonIds}
+          completedLessonIds={completedSet}
+          unlockedModuleEvalIds={unlockedModuleEvalIds}
+          passedModuleEvalIds={passedModuleEvalSet}
+          courseEvalUnlocked={courseEvalUnlocked}
+          courseEvalPassed={courseEvalPassed}
+          progressPercent={progressPercent}
+          onSelectLesson={(lessonId) => {
+            if (!unlockedLessonIds.has(lessonId)) return;
+            navigate({ type: "lesson", lessonId });
+          }}
+          onSelectModuleEval={(moduleId) => {
+            if (!unlockedModuleEvalIds.has(moduleId)) return;
+            navigate({ type: "module_eval", moduleId });
+          }}
+          onSelectCourseEval={() => {
+            if (!courseEvalUnlocked) return;
+            navigate({ type: "course_eval" });
+          }}
+        />
+      </div>
+
+      {isSidebarOpen ? (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="Close table of contents"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 w-[min(88vw,20rem)] bg-surface shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <p className="text-sm font-semibold text-foreground">
+                Table of contents
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(false)}
+                className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground"
+              >
+                Close
+              </button>
+            </div>
+            <div className="h-[calc(100vh-3.5rem)] overflow-y-auto">
+              <RunnerSidebar
+                course={course}
+                lessons={lessonRefs}
+                selectedLessonId={
+                  currentView.type === "lesson" ? currentView.lessonId : null
+                }
+                selectedModuleEvalId={
+                  currentView.type === "module_eval"
+                    ? currentView.moduleId
+                    : null
+                }
+                courseEvalSelected={currentView.type === "course_eval"}
+                unlockedLessonIds={unlockedLessonIds}
+                completedLessonIds={completedSet}
+                unlockedModuleEvalIds={unlockedModuleEvalIds}
+                passedModuleEvalIds={passedModuleEvalSet}
+                courseEvalUnlocked={courseEvalUnlocked}
+                courseEvalPassed={courseEvalPassed}
+                progressPercent={progressPercent}
+                onSelectLesson={(lessonId) => {
+                  if (!unlockedLessonIds.has(lessonId)) return;
+                  navigate({ type: "lesson", lessonId });
+                }}
+                onSelectModuleEval={(moduleId) => {
+                  if (!unlockedModuleEvalIds.has(moduleId)) return;
+                  navigate({ type: "module_eval", moduleId });
+                }}
+                onSelectCourseEval={() => {
+                  if (!courseEvalUnlocked) return;
+                  navigate({ type: "course_eval" });
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <main className="space-y-4 bg-muted/20 p-4 sm:p-6">
         {/* Overview / welcome screen */}
