@@ -10,6 +10,7 @@ interface ToolBarProps {
   onAddBlock?: (blockType: BlockType) => void;
   onAddModuleEvaluation?: () => void;
   onAddCourseEvaluation?: () => void;
+  readOnly?: boolean;
   canAddBlock?: boolean;
   canAddModuleEvaluation?: boolean;
   canAddCourseEvaluation?: boolean;
@@ -149,6 +150,7 @@ export default function ToolBar({
   onAddBlock,
   onAddModuleEvaluation,
   onAddCourseEvaluation,
+  readOnly = false,
   canAddBlock = true,
   canAddModuleEvaluation = true,
   canAddCourseEvaluation = true,
@@ -166,6 +168,10 @@ export default function ToolBar({
   };
 
   const isButtonDisabled = (buttonId: ToolButton["id"]) => {
+    if (readOnly) {
+      return true;
+    }
+
     if (buttonId === "module_evaluation") {
       return !canAddModuleEvaluation;
     }
