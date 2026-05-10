@@ -1,6 +1,9 @@
 "use client";
 
-import { type StoryboardBlockType } from "@/shared/types/storyboard";
+import {
+  BLOCK_TYPES,
+  type StoryboardBlockType,
+} from "@/shared/types/storyboard";
 
 type BlockType = StoryboardBlockType;
 
@@ -180,13 +183,7 @@ export default function ToolBar({
       return !canAddCourseEvaluation;
     }
 
-    if (
-      buttonId === "video" ||
-      buttonId === "richtext" ||
-      buttonId === "image" ||
-      buttonId === "audio" ||
-      buttonId === "quiz_inline"
-    ) {
+    if (BLOCK_TYPES.includes(buttonId as BlockType)) {
       return !canAddBlock;
     }
 
