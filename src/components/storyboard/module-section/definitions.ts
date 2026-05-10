@@ -7,6 +7,7 @@ import type {
 
 export type ModuleSectionProps = {
   moduleItem: StoryboardRenderModule;
+  readOnly?: boolean;
   selectedModuleId?: string;
   selectedLessonId?: string;
   selectedBlockId?: string;
