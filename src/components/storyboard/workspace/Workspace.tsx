@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 type WorkspaceProps = {
   initialCourse: ApiCoursePayload;
   courseRecordId: string;
+  readOnly?: boolean;
 };
 
 type StoryboardSelection =
@@ -80,6 +81,7 @@ function createNewBlock(blockType: StoryboardBlockType) {
 export default function Workspace({
   initialCourse,
   courseRecordId,
+  readOnly = false,
 }: WorkspaceProps) {
   const [workingCourse, setWorkingCourse] =
     useState<ApiCoursePayload>(initialCourse);
@@ -161,14 +163,14 @@ export default function Workspace({
 
   const queueSave = useCallback(
     (nextCourse: ApiCoursePayload) => {
-      if (saveBlockedRef.current) {
+      if (readOnly || saveBlockedRef.current) {
         return;
       }
 
       pendingSaveRef.current = nextCourse;
       void persistLatestCourse();
     },
-    [persistLatestCourse],
+    [persistLatestCourse, readOnly],
   );
 
   const builderResult = useMemo(
@@ -328,6 +330,10 @@ export default function Workspace({
         nextSelection?: StoryboardSelection | null;
       },
     ) => {
+      if (readOnly) {
+        return;
+      }
+
       const result = mutator(workingCourseRef.current);
 
       workingCourseRef.current = result.nextCourse;
@@ -338,7 +344,7 @@ export default function Workspace({
         setSelection(result.nextSelection);
       }
     },
-    [queueSave],
+    [queueSave, readOnly],
   );
 
   const selectModule = useCallback((moduleId: string) => {
@@ -868,6 +874,10 @@ export default function Workspace({
 
   const handleCourseStatusChange = useCallback(
     (nextStatus: ApiCoursePayload["status"]) => {
+      if (readOnly) {
+        return;
+      }
+
       applyCourseMutation((current) => ({
         nextCourse: {
           ...current,
@@ -875,7 +885,7 @@ export default function Workspace({
         },
       }));
     },
-    [applyCourseMutation],
+    [applyCourseMutation, readOnly],
   );
 
   if (!builderResult.ok || !renderModel) {
@@ -928,6 +938,7 @@ export default function Workspace({
                 Status
                 <select
                   value={workingCourse.status}
+                  disabled={readOnly}
                   onChange={(event) => {
                     const nextStatus = event.target
                       .value as ApiCoursePayload["status"];
@@ -940,7 +951,7 @@ export default function Workspace({
                       handleCourseStatusChange(nextStatus);
                     }
                   }}
-                  className="rounded-md border border-border bg-surface px-2 py-1 text-xs font-semibold text-foreground outline-none ring-primary focus:ring-1"
+                  className="rounded-md border border-border bg-surface px-2 py-1 text-xs font-semibold text-foreground outline-none ring-primary focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60"
                   aria-label="Course status"
                 >
                   {COURSE_STATUS_OPTIONS.map((status) => (
@@ -971,6 +982,7 @@ export default function Workspace({
                 <CourseEvaluationCanvas
                   evaluation={workingCourse.courseEvaluation}
                   isSelected={isCourseEvaluationSelected}
+                  readOnly={readOnly}
                   onSelect={selectCourseEvaluation}
                   onUpdate={handleUpdateCourseEvaluation}
                   onDelete={handleDeleteCourseEvaluation}
@@ -982,6 +994,7 @@ export default function Workspace({
               <ModuleSection
                 key={moduleItem.id}
                 moduleItem={moduleItem}
+                readOnly={readOnly}
                 selectedModuleId={selectedModuleId}
                 selectedLessonId={selectedLessonId}
                 selectedBlockId={selectedBlockId}
@@ -1010,6 +1023,7 @@ export default function Workspace({
                 onAddBlock={handleAddBlock}
                 onAddModuleEvaluation={requestModuleEvaluationCreation}
                 onAddCourseEvaluation={requestCourseEvaluationCreation}
+                readOnly={readOnly}
                 canAddBlock={canAddBlock}
                 canAddModuleEvaluation={canAddModuleEvaluation}
                 canAddCourseEvaluation={canAddCourseEvaluation}
@@ -1050,10 +1064,16 @@ export default function Workspace({
                 <p className="font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Save Status
                 </p>
+                {readOnly ? (
+                  <p className="mt-2 text-sky-700">
+                    View-only mode. You can inspect this storyboard but not edit
+                    it.
+                  </p>
+                ) : null}
                 {saveState.status === "saving" ? (
                   <p className="mt-2 text-sky-700">Saving changes...</p>
                 ) : null}
-                {saveState.status === "idle" ? (
+                {saveState.status === "idle" && !readOnly ? (
                   <p className="mt-2 text-emerald-700">All changes saved.</p>
                 ) : null}
                 {saveState.status === "error" ? (
@@ -1068,12 +1088,15 @@ export default function Workspace({
               </p>
               <BlockDetailRenderer
                 block={selectedBlock}
-                onUpdateBlock={handleUpdateBlock}
+                onUpdateBlock={readOnly ? undefined : handleUpdateBlock}
                 moduleId={selectedModuleId}
                 lessonId={selectedLessonId}
               />
 
-              {selectedBlock && selectedModuleId && selectedLessonId ? (
+              {selectedBlock &&
+              selectedModuleId &&
+              selectedLessonId &&
+              !readOnly ? (
                 <button
                   type="button"
                   onClick={() => {
