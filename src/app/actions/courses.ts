@@ -22,7 +22,7 @@ export type SaveCourseStoryboardResult =
     }
   | {
       ok: false;
-      code: "VERSION_CONFLICT" | "VALIDATION" | "UNKNOWN";
+      code: "VERSION_CONFLICT" | "VALIDATION" | "FORBIDDEN" | "UNKNOWN";
       message: string;
     };
 
@@ -229,7 +229,18 @@ export async function createCourse(
 export async function saveCourseStoryboard(
   input: SaveCourseStoryboardInput,
 ): Promise<SaveCourseStoryboardResult> {
-  // TODO: validation and security checks (e.g. ensure user has permission to edit this course)
+  const session = await getSessionSafely();
+  const userId = session?.user?.id;
+  const userRole = session?.user?.role;
+
+  if (!userId || userRole !== "ADMIN") {
+    return {
+      ok: false,
+      code: "FORBIDDEN",
+      message: "You are not authorized to edit this storyboard.",
+    };
+  }
+
   if (!Number.isInteger(input.expectedVersion) || input.expectedVersion < 1) {
     return {
       ok: false,
@@ -251,6 +262,20 @@ export async function saveCourseStoryboard(
   const nextStructure = toPersistedStructure(input.payload);
 
   try {
+    const [courseOwner] = await db
+      .select({ createdById: courses.createdById })
+      .from(courses)
+      .where(eq(courses.id, input.courseId))
+      .limit(1);
+
+    if (!courseOwner || courseOwner.createdById !== userId) {
+      return {
+        ok: false,
+        code: "FORBIDDEN",
+        message: "You can only edit courses you created.",
+      };
+    }
+
     const [updatedCourse] = await db
       .update(courses)
       .set({
