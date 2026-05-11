@@ -3,6 +3,7 @@
 import { saveCourseStoryboard } from "@/app/actions/courses";
 import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
 import { StoryboardBuilder } from "@/app/utils/storyboard-builder/story-board-builder";
+import PromptDialog from "@/components/dialogs/Prompt-dialog";
 import BlockDetailRenderer from "@/components/storyboard/blocks/Block-detail-renderer";
 import CourseEvaluationCanvas from "@/components/storyboard/course-evaluation/Course-evaluation-canvas";
 import type { LessonCanvasEditableValues } from "@/components/storyboard/lesson-canvas/Lesson-canvas";
@@ -87,6 +88,7 @@ export default function Workspace({
     useState<ApiCoursePayload>(initialCourse);
   const [selection, setSelection] = useState<StoryboardSelection | null>(null);
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
+  const [isModulePromptOpen, setIsModulePromptOpen] = useState(false);
 
   const workingCourseRef = useRef<ApiCoursePayload>(initialCourse);
   const courseEvaluationRef = useRef<HTMLDivElement | null>(null);
@@ -579,15 +581,71 @@ export default function Workspace({
     [applyCourseMutation, normalizedSelection],
   );
 
+  const handleDeleteLesson = useCallback(
+    (moduleId: string, lessonId: string) => {
+      applyCourseMutation((current) => {
+        const targetModule = current.modules.find(
+          (moduleItem) => moduleItem.id === moduleId,
+        );
+
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            lessons: moduleItem.lessons.filter(
+              (lessonItem) => lessonItem.id !== lessonId,
+            ),
+          };
+        });
+
+        const wasSelected =
+          (normalizedSelection?.type === "LESSON" ||
+            normalizedSelection?.type === "BLOCK") &&
+          normalizedSelection.lessonId === lessonId;
+
+        if (!wasSelected) {
+          return {
+            nextCourse: {
+              ...current,
+              modules: nextModules,
+            },
+          };
+        }
+
+        const lessonIndex =
+          targetModule?.lessons.findIndex((l) => l.id === lessonId) ?? -1;
+        const remainingLessons =
+          targetModule?.lessons.filter((l) => l.id !== lessonId) ?? [];
+        const fallbackLesson =
+          remainingLessons[lessonIndex] ?? remainingLessons[lessonIndex - 1];
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+          nextSelection: fallbackLesson
+            ? {
+                type: "LESSON" as const,
+                moduleId,
+                lessonId: fallbackLesson.id,
+              }
+            : {
+                type: "MODULE" as const,
+                moduleId,
+              },
+        };
+      });
+    },
+    [applyCourseMutation, normalizedSelection],
+  );
+
   const requestModuleCreation = useCallback(() => {
-    const userInput = window.prompt("Name your new module", "New Module");
-
-    if (userInput === null) {
-      return;
-    }
-
-    handleAddModule(userInput);
-  }, [handleAddModule]);
+    setIsModulePromptOpen(true);
+  }, []);
 
   const requestModuleEvaluationCreation = useCallback(() => {
     if (!selectedModuleId || !selectedModule || selectedModule.evaluation) {
@@ -736,9 +794,14 @@ export default function Workspace({
 
       applyCourseMutation((current) => {
         const nextLessonId = createEntityId("lesson");
+        const targetModule = current.modules.find(
+          (moduleItem) => moduleItem.id === moduleId,
+        );
+        const mostRecentLesson = targetModule?.lessons.at(-1);
+        const inheritedTitle = mostRecentLesson?.title?.trim();
         const nextLesson = {
           id: nextLessonId,
-          title: "New Lesson",
+          title: inheritedTitle || "New Lesson",
           duration: "10 min",
           objective: "",
           blocks: [],
@@ -1005,6 +1068,7 @@ export default function Workspace({
                 onModuleTitleChange={handleModuleTitleChange}
                 onLessonAttributesChange={handleLessonAttributesChange}
                 onAddLesson={handleAddLesson}
+                onDeleteLesson={handleDeleteLesson}
                 onAddBlock={addBlockToLesson}
                 onDeleteBlocks={handleDeleteBlocks}
                 onUpdateModuleEvaluation={handleUpdateModuleEvaluation}
@@ -1113,6 +1177,19 @@ export default function Workspace({
           </aside>
         </div>
       </div>
+
+      {isModulePromptOpen ? (
+        <PromptDialog
+          label="Module name"
+          defaultValue="New Module"
+          confirmLabel="Create"
+          onConfirm={(value) => {
+            setIsModulePromptOpen(false);
+            handleAddModule(value);
+          }}
+          onCancel={() => setIsModulePromptOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
