@@ -21,6 +21,7 @@ export type ModuleSectionProps = {
     values: LessonCanvasEditableValues,
   ) => void;
   onAddLesson: (moduleId: string) => void;
+  onDeleteLesson: (moduleId: string, lessonId: string) => void;
   onAddBlock: (
     moduleId: string,
     lessonId: string,

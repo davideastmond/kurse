@@ -1,9 +1,14 @@
 "use client";
 
+import ConfirmDialog from "@/components/dialogs/Confirm-dialog";
 import LessonCanvas from "@/components/storyboard/lesson-canvas/Lesson-canvas";
 import ModuleEvaluationCanvas from "@/components/storyboard/module-evaluation/Module-evaluation-canvas";
 import type { ModuleSectionProps } from "@/components/storyboard/module-section/definitions";
 import { useState } from "react";
+
+type PendingDelete =
+  | { type: "module" }
+  | { type: "lesson"; lessonId: string; lessonTitle: string };
 
 export default function ModuleSection({
   moduleItem,
@@ -18,6 +23,7 @@ export default function ModuleSection({
   onLessonAttributesChange,
   onModuleTitleChange,
   onAddLesson,
+  onDeleteLesson,
   onAddBlock,
   onDeleteBlocks,
   onUpdateModuleEvaluation,
@@ -26,6 +32,9 @@ export default function ModuleSection({
   const isModuleSelected = selectedModuleId === moduleItem.id;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
+    null,
+  );
 
   const commitTitleChange = () => {
     if (readOnly) {
@@ -118,15 +127,7 @@ export default function ModuleSection({
                   <button
                     type="button"
                     onClick={() => {
-                      const shouldDelete = window.confirm(
-                        `Delete module \"${moduleItem.title}\"? This removes all lessons and blocks in this module.`,
-                      );
-
-                      if (!shouldDelete) {
-                        return;
-                      }
-
-                      onDeleteModule(moduleItem.id);
+                      setPendingDelete({ type: "module" });
                     }}
                     className="rounded-full border border-danger/40 bg-danger/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-danger transition hover:bg-danger/20"
                   >
@@ -196,6 +197,17 @@ export default function ModuleSection({
                         onLessonAttributesChange(lessonItem.id, values);
                       }
                 }
+                onDeleteLesson={
+                  readOnly
+                    ? undefined
+                    : () => {
+                        setPendingDelete({
+                          type: "lesson",
+                          lessonId: lessonItem.id,
+                          lessonTitle: lessonItem.title,
+                        });
+                      }
+                }
                 onDeleteBlocks={
                   readOnly
                     ? undefined
@@ -233,6 +245,25 @@ export default function ModuleSection({
           />
         ) : null}
       </div>
+
+      {pendingDelete ? (
+        <ConfirmDialog
+          message={
+            pendingDelete.type === "module"
+              ? `Delete module "${moduleItem.title}"? This removes all lessons and blocks in this module.`
+              : `Delete lesson "${pendingDelete.lessonTitle}"? This removes all blocks in this lesson.`
+          }
+          onConfirm={() => {
+            if (pendingDelete.type === "module") {
+              onDeleteModule(moduleItem.id);
+            } else {
+              onDeleteLesson(moduleItem.id, pendingDelete.lessonId);
+            }
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      ) : null}
     </section>
   );
 }
