@@ -149,7 +149,7 @@ export default function LessonStage({
               {block.type === "image" && block.imageUrl ? (
                 <img
                   src={block.imageUrl}
-                  alt={block.title}
+                  alt={block.title || "Course image"}
                   className="w-full rounded-xl object-contain"
                   style={{ maxHeight: "min(70vh, 640px)" }}
                 />
