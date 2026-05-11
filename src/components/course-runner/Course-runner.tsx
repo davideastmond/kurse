@@ -56,22 +56,19 @@ function deriveProgressState(
     // Module eval is unlocked once all lessons in this module are done.
     if (
       mod.evaluation &&
-      mod.lessons.length > 0 &&
       mod.lessons.every((l) => completedLessonIds.has(l.id))
     ) {
       unlockedModuleEvalIds.add(mod.id);
     }
   }
 
-  const courseEvalUnlocked =
-    modules.length > 0 &&
-    modules.every((mod) => {
-      const lessonsDone = mod.lessons.every((l) =>
-        completedLessonIds.has(l.id),
-      );
-      const evalPassed = !mod.evaluation || passedModuleEvalIds.has(mod.id);
-      return lessonsDone && evalPassed;
-    });
+  const courseEvalUnlocked = modules.every((mod) => {
+    const lessonsDone = mod.lessons.every((l) =>
+      completedLessonIds.has(l.id),
+    );
+    const evalPassed = !mod.evaluation || passedModuleEvalIds.has(mod.id);
+    return lessonsDone && evalPassed;
+  });
 
   return { unlockedLessonIds, unlockedModuleEvalIds, courseEvalUnlocked };
 }
