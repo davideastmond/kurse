@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 
 type PromptDialogProps = {
   label: string;
@@ -19,6 +19,9 @@ export default function PromptDialog({
 }: PromptDialogProps) {
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
+  const uid = useId();
+  const labelId = `${uid}-label`;
+  const inputId = `${uid}-input`;
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -50,16 +53,22 @@ export default function PromptDialog({
         aria-label="Close dialog"
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-5 shadow-lg">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelId}
+        className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-5 shadow-lg"
+      >
         <label
-          htmlFor="prompt-dialog-input"
+          id={labelId}
+          htmlFor={inputId}
           className="block text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
         >
           {label}
         </label>
         <input
           ref={inputRef}
-          id="prompt-dialog-input"
+          id={inputId}
           type="text"
           value={value}
           onChange={(event) => setValue(event.target.value)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useId } from "react";
 
 type ConfirmDialogProps = {
   message: string;
@@ -15,6 +15,14 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const uid = useId();
+  const messageId = `${uid}-message`;
+
+  useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -34,10 +42,16 @@ export default function ConfirmDialog({
         aria-label="Close dialog"
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-5 shadow-lg">
-        <p className="text-sm leading-6 text-foreground">{message}</p>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={messageId}
+        className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-5 shadow-lg"
+      >
+        <p id={messageId} className="text-sm leading-6 text-foreground">{message}</p>
         <div className="mt-5 flex items-center justify-end gap-2">
           <button
+            ref={cancelRef}
             type="button"
             onClick={onCancel}
             className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted"

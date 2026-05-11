@@ -588,6 +588,10 @@ export default function Workspace({
           (moduleItem) => moduleItem.id === moduleId,
         );
 
+        if (!targetModule) {
+          return { nextCourse: current };
+        }
+
         const nextModules = current.modules.map((moduleItem) => {
           if (moduleItem.id !== moduleId) {
             return moduleItem;
