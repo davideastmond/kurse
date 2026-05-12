@@ -262,19 +262,28 @@ export default function CourseRunner({
   const nextLabel =
     afterLessonTarget.type === "overview" ? "Mark Complete" : "Next";
 
+  const completedLessonCount = useMemo(() => {
+    return lessonRefs.reduce((count, lessonRef) => {
+      return count + (completedSet.has(lessonRef.lesson.id) ? 1 : 0);
+    }, 0);
+  }, [completedSet, lessonRefs]);
+
   // Progress bar (lessons only for now).
   const progressPercent =
     lessonRefs.length === 0
       ? 0
-      : Math.round((completedSet.size / lessonRefs.length) * 100);
+      : Math.min(
+          100,
+          Math.round((completedLessonCount / lessonRefs.length) * 100),
+        );
 
   // Start button label.
   const startButtonLabel = useMemo(() => {
     if (lessonRefs.length === 0) return "View";
-    if (completedSet.size === lessonRefs.length) return "Review";
-    if (completedSet.size > 0) return "Continue";
+    if (completedLessonCount === lessonRefs.length) return "Review";
+    if (completedLessonCount > 0) return "Continue";
     return "Begin";
-  }, [completedSet.size, lessonRefs.length]);
+  }, [completedLessonCount, lessonRefs.length]);
 
   const launchLessonId = useMemo(() => {
     if (lessonRefs.length === 0) return null;
