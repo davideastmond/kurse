@@ -250,13 +250,10 @@ function validatePayload(
           blockItem.type === "image" ||
           blockItem.type === "video";
         if (titleIsOptional) {
-          if (
-            typeof blockItem.title !== "undefined" &&
-            typeof blockItem.title !== "string"
-          ) {
+          if (typeof blockItem.title !== "string") {
             pushInvalidField(
               `${blockPath}.title`,
-              "block title must be a string when provided.",
+              "block title must be a string.",
             );
           }
         } else if (!isNonEmptyString(blockItem.title)) {
