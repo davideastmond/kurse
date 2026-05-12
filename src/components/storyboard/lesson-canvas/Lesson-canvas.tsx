@@ -25,6 +25,7 @@ type LessonCanvasProps = {
   onBlockClick?: (block: LessonCanvasBlock) => void;
   onLessonAttributesChange?: (values: LessonCanvasEditableValues) => void;
   onDeleteBlocks?: (blockIds: string[]) => void;
+  onDeleteLesson?: () => void;
   className?: string;
 };
 
@@ -60,6 +61,7 @@ export default function LessonCanvas({
   onBlockClick,
   onLessonAttributesChange,
   onDeleteBlocks,
+  onDeleteLesson,
   className,
 }: LessonCanvasProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -283,6 +285,27 @@ export default function LessonCanvas({
                 className="inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground transition hover:border-border hover:bg-muted"
               >
                 Done
+              </button>
+            ) : null}
+            {!isBatchEditing && isSelected && onDeleteLesson ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDeleteLesson();
+                }}
+                aria-label="Delete lesson"
+                title="Delete lesson"
+                className="inline-flex items-center justify-center rounded-full border border-danger/40 bg-danger/15 p-1.5 text-danger transition hover:bg-danger/25"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-3.5 w-3.5"
+                  aria-hidden="true"
+                >
+                  <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9zm0 5h2v9H9V8zm4 0h2v9h-2V8z" />
+                </svg>
               </button>
             ) : null}
           </div>

@@ -7,9 +7,11 @@ import type {
 
 export type ModuleSectionProps = {
   moduleItem: StoryboardRenderModule;
+  readOnly?: boolean;
   selectedModuleId?: string;
   selectedLessonId?: string;
   selectedBlockId?: string;
+  onDeleteModule: (moduleId: string) => void;
   onSelectModule: (moduleId: string) => void;
   onSelectLesson: (moduleId: string, lessonId: string) => void;
   onSelectBlock: (moduleId: string, lessonId: string, blockId: string) => void;
@@ -19,6 +21,7 @@ export type ModuleSectionProps = {
     values: LessonCanvasEditableValues,
   ) => void;
   onAddLesson: (moduleId: string) => void;
+  onDeleteLesson: (moduleId: string, lessonId: string) => void;
   onAddBlock: (
     moduleId: string,
     lessonId: string,

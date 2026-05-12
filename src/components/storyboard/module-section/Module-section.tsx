@@ -1,21 +1,29 @@
 "use client";
 
+import ConfirmDialog from "@/components/dialogs/Confirm-dialog";
 import LessonCanvas from "@/components/storyboard/lesson-canvas/Lesson-canvas";
 import ModuleEvaluationCanvas from "@/components/storyboard/module-evaluation/Module-evaluation-canvas";
 import type { ModuleSectionProps } from "@/components/storyboard/module-section/definitions";
 import { useState } from "react";
 
+type PendingDelete =
+  | { type: "module" }
+  | { type: "lesson"; lessonId: string; lessonTitle: string };
+
 export default function ModuleSection({
   moduleItem,
+  readOnly = false,
   selectedModuleId,
   selectedLessonId,
   selectedBlockId,
+  onDeleteModule,
   onSelectModule,
   onSelectLesson,
   onSelectBlock,
   onLessonAttributesChange,
   onModuleTitleChange,
   onAddLesson,
+  onDeleteLesson,
   onAddBlock,
   onDeleteBlocks,
   onUpdateModuleEvaluation,
@@ -24,8 +32,16 @@ export default function ModuleSection({
   const isModuleSelected = selectedModuleId === moduleItem.id;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
+    null,
+  );
 
   const commitTitleChange = () => {
+    if (readOnly) {
+      setIsEditingTitle(false);
+      return;
+    }
+
     const nextTitle = draftTitle.trim();
 
     if (!nextTitle) {
@@ -95,17 +111,30 @@ export default function ModuleSection({
                   {moduleItem.title}
                 </button>
               </h2>
-              <button
-                type="button"
-                onClick={() => {
-                  onSelectModule(moduleItem.id);
-                  setDraftTitle(moduleItem.title);
-                  setIsEditingTitle(true);
-                }}
-                className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:bg-muted"
-              >
-                Rename
-              </button>
+              {!readOnly ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectModule(moduleItem.id);
+                      setDraftTitle(moduleItem.title);
+                      setIsEditingTitle(true);
+                    }}
+                    className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-border hover:bg-muted"
+                  >
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingDelete({ type: "module" });
+                    }}
+                    className="rounded-full border border-danger/40 bg-danger/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-danger transition hover:bg-danger/20"
+                  >
+                    Delete
+                  </button>
+                </>
+              ) : null}
             </div>
           )}
         </div>
@@ -120,15 +149,17 @@ export default function ModuleSection({
               {moduleItem.evaluationTitle}
             </span>
           ) : null}
-          <button
-            type="button"
-            onClick={() => {
-              onAddLesson(moduleItem.id);
-            }}
-            className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
-          >
-            Add Lesson
-          </button>
+          {!readOnly ? (
+            <button
+              type="button"
+              onClick={() => {
+                onAddLesson(moduleItem.id);
+              }}
+              className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+            >
+              Add Lesson
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -159,15 +190,34 @@ export default function ModuleSection({
                 onBlockClick={(block) => {
                   onSelectBlock(moduleItem.id, lessonItem.id, block.id);
                 }}
-                onLessonAttributesChange={(values) => {
-                  onLessonAttributesChange(lessonItem.id, values);
-                }}
-                onDeleteBlocks={(blockIds) => {
-                  onDeleteBlocks(moduleItem.id, lessonItem.id, blockIds);
-                }}
+                onLessonAttributesChange={
+                  readOnly
+                    ? undefined
+                    : (values) => {
+                        onLessonAttributesChange(lessonItem.id, values);
+                      }
+                }
+                onDeleteLesson={
+                  readOnly
+                    ? undefined
+                    : () => {
+                        setPendingDelete({
+                          type: "lesson",
+                          lessonId: lessonItem.id,
+                          lessonTitle: lessonItem.title,
+                        });
+                      }
+                }
+                onDeleteBlocks={
+                  readOnly
+                    ? undefined
+                    : (blockIds) => {
+                        onDeleteBlocks(moduleItem.id, lessonItem.id, blockIds);
+                      }
+                }
               />
 
-              {isLessonSelected ? (
+              {isLessonSelected && !readOnly ? (
                 <div className="flex justify-end px-2">
                   <button
                     type="button"
@@ -189,11 +239,31 @@ export default function ModuleSection({
           <ModuleEvaluationCanvas
             evaluation={moduleItem.evaluation}
             moduleId={moduleItem.id}
+            readOnly={readOnly}
             onUpdate={onUpdateModuleEvaluation}
             onDelete={onDeleteModuleEvaluation}
           />
         ) : null}
       </div>
+
+      {pendingDelete ? (
+        <ConfirmDialog
+          message={
+            pendingDelete.type === "module"
+              ? `Delete module "${moduleItem.title}"? This removes all lessons and blocks in this module.`
+              : `Delete lesson "${pendingDelete.lessonTitle}"? This removes all blocks in this lesson.`
+          }
+          onConfirm={() => {
+            if (pendingDelete.type === "module") {
+              onDeleteModule(moduleItem.id);
+            } else {
+              onDeleteLesson(moduleItem.id, pendingDelete.lessonId);
+            }
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      ) : null}
     </section>
   );
 }

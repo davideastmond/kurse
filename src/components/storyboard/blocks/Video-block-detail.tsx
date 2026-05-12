@@ -65,7 +65,7 @@ export default function VideoBlockDetail({
       return;
     }
 
-    const trimmedTitle = title.trim() || block.title;
+    const trimmedTitle = title.trim();
     const trimmedUrl = videoUrlDraft.trim();
 
     if (trimmedUrl) {
@@ -119,7 +119,9 @@ export default function VideoBlockDetail({
           </span>
         </div>
 
-        <p className="text-sm leading-6 text-muted-foreground">{block.detail}</p>
+        <p className="text-sm leading-6 text-muted-foreground">
+          {block.detail}
+        </p>
 
         <div className="space-y-4 rounded-3xl border border-sky-200 bg-sky-50/60 p-4">
           <div>
@@ -197,12 +199,20 @@ export default function VideoBlockDetail({
   return (
     <div className="mt-4 space-y-4">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-xl font-semibold text-foreground">{block.title}</h3>
+        {block.title ? (
+          <h3 className="text-xl font-semibold text-foreground">
+            {block.title}
+          </h3>
+        ) : null}
         <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">
           Video
         </span>
       </div>
-      <p className="text-sm leading-6 text-muted-foreground">{block.detail}</p>
+      {block.detail ? (
+        <p className="text-sm leading-6 text-muted-foreground">
+          {block.detail}
+        </p>
+      ) : null}
 
       <div className="space-y-3 rounded-3xl border border-sky-200 bg-sky-50/60 p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">

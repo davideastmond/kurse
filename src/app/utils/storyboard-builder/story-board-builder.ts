@@ -238,10 +238,6 @@ function validatePayload(
           blockIds.add(blockItem.id);
         }
 
-        if (!isNonEmptyString(blockItem.title)) {
-          pushInvalidField(`${blockPath}.title`, "block title is required.");
-        }
-
         if (!isKnownBlockType(blockItem.type)) {
           pushInvalidField(
             `${blockPath}.type`,
@@ -249,8 +245,33 @@ function validatePayload(
           );
         }
 
-        if (!isNonEmptyString(blockItem.detail)) {
+        const titleIsOptional =
+          blockItem.type === "richtext" ||
+          blockItem.type === "image" ||
+          blockItem.type === "video";
+        if (titleIsOptional) {
+          if (typeof blockItem.title !== "string") {
+            pushInvalidField(
+              `${blockPath}.title`,
+              "block title must be a string.",
+            );
+          }
+        } else if (!isNonEmptyString(blockItem.title)) {
+          pushInvalidField(`${blockPath}.title`, "block title is required.");
+        }
+
+        const detailIsOptional = blockItem.type === "image";
+        if (!detailIsOptional && !isNonEmptyString(blockItem.detail)) {
           pushInvalidField(`${blockPath}.detail`, "block detail is required.");
+        } else if (
+          detailIsOptional &&
+          typeof blockItem.detail !== "undefined" &&
+          typeof blockItem.detail !== "string"
+        ) {
+          pushInvalidField(
+            `${blockPath}.detail`,
+            "block detail must be a string when provided.",
+          );
         }
 
         if (!isNonEmptyString(blockItem.duration)) {

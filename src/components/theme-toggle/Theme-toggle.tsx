@@ -36,6 +36,10 @@ export default function ThemeToggle() {
   }, []);
 
   function toggleTheme() {
+    if (!isReady) {
+      return;
+    }
+
     const nextTheme: ThemeMode = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
     applyTheme(nextTheme);
@@ -46,6 +50,7 @@ export default function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       disabled={!isReady}
+      aria-disabled={!isReady}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
       className="rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold tracking-[0.08em] text-surface-foreground uppercase shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-70"
     >
