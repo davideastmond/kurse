@@ -14,8 +14,16 @@ import {
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+type SeededCourseStructure = {
+  courseId?: string;
+  courseEvaluation?: ApiCoursePayload["courseEvaluation"];
+  modules?: ApiCoursePayload["modules"];
+  metadata?: Record<string, string | undefined>;
+};
+
 type CompleteLessonInput = {
   enrollmentId: string;
+  courseRecordId: string;
   lessonId: string;
   courseSlug: string;
 };
@@ -42,10 +50,10 @@ export async function completeLessonProgress(
     };
   }
 
-  if (!input.enrollmentId || !input.lessonId || !input.courseSlug) {
+  if (!input.enrollmentId || !input.courseRecordId || !input.lessonId || !input.courseSlug) {
     return {
       ok: false,
-      message: "Enrollment, lesson, and course slug are required.",
+      message: "Enrollment, course record, lesson, and course slug are required.",
     };
   }
 
@@ -61,6 +69,7 @@ export async function completeLessonProgress(
   const [enrollment] = await db
     .select({
       id: enrollments.id,
+      courseId: enrollments.courseId,
     })
     .from(enrollments)
     .where(
@@ -75,6 +84,40 @@ export async function completeLessonProgress(
     return {
       ok: false,
       message: "Enrollment not found.",
+    };
+  }
+
+  if (enrollment.courseId !== input.courseRecordId) {
+    return {
+      ok: false,
+      message: "Enrollment does not belong to the specified course.",
+    };
+  }
+
+  // Verify lessonId exists in the authoritative course structure.
+  const [courseRow] = await db
+    .select({ structure: courses.structure })
+    .from(courses)
+    .where(eq(courses.id, input.courseRecordId))
+    .limit(1);
+
+  if (!courseRow) {
+    return {
+      ok: false,
+      message: "Course not found.",
+    };
+  }
+
+  const structure = (courseRow.structure ?? {}) as SeededCourseStructure;
+  const moduleList = Array.isArray(structure.modules) ? structure.modules : [];
+  const lessonExists = moduleList.some((m) =>
+    Array.isArray(m.lessons) && m.lessons.some((l: { id: string }) => l.id === input.lessonId),
+  );
+
+  if (!lessonExists) {
+    return {
+      ok: false,
+      message: "Lesson not found in course structure.",
     };
   }
 
@@ -105,13 +148,6 @@ export async function completeLessonProgress(
 // ---------------------------------------------------------------------------
 // Evaluation attempts
 // ---------------------------------------------------------------------------
-
-type SeededCourseStructure = {
-  courseId?: string;
-  courseEvaluation?: ApiCoursePayload["courseEvaluation"];
-  modules?: ApiCoursePayload["modules"];
-  metadata?: Record<string, string | undefined>;
-};
 
 type SubmitEvaluationAttemptInput = {
   enrollmentId: string;

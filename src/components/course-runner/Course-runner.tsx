@@ -314,6 +314,7 @@ export default function CourseRunner({
     startTransition(async () => {
       const result = await completeLessonProgress({
         enrollmentId,
+        courseRecordId,
         lessonId: selectedLessonRef.lesson.id,
         courseSlug: course.slug,
       });
