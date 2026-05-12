@@ -165,9 +165,9 @@ export async function submitEvaluationAttempt(
     return { ok: false, message: "Database is not configured." };
   }
 
-  // Verify the enrollment belongs to the current user.
+  // Verify the enrollment belongs to the current user and to the intended course.
   const [enrollment] = await db
-    .select({ id: enrollments.id })
+    .select({ id: enrollments.id, courseId: enrollments.courseId })
     .from(enrollments)
     .where(
       and(
@@ -179,6 +179,13 @@ export async function submitEvaluationAttempt(
 
   if (!enrollment) {
     return { ok: false, message: "Enrollment not found." };
+  }
+
+  if (enrollment.courseId !== input.courseRecordId) {
+    return {
+      ok: false,
+      message: "Enrollment does not belong to the specified course.",
+    };
   }
 
   // Load authoritative evaluation definition from the course structure.
