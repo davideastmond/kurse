@@ -79,6 +79,23 @@ function createNewBlock(blockType: StoryboardBlockType) {
   };
 }
 
+function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  if (
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= items.length ||
+    toIndex >= items.length ||
+    fromIndex === toIndex
+  ) {
+    return items;
+  }
+
+  const nextItems = [...items];
+  const [moved] = nextItems.splice(fromIndex, 1);
+  nextItems.splice(toIndex, 0, moved);
+  return nextItems;
+}
+
 export default function Workspace({
   initialCourse,
   courseRecordId,
@@ -581,6 +598,34 @@ export default function Workspace({
     [applyCourseMutation, normalizedSelection],
   );
 
+  const handleMoveModule = useCallback(
+    (moduleId: string, direction: "up" | "down") => {
+      applyCourseMutation((current) => {
+        const fromIndex = current.modules.findIndex(
+          (moduleItem) => moduleItem.id === moduleId,
+        );
+
+        if (fromIndex === -1) {
+          return { nextCourse: current };
+        }
+
+        const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
+
+        if (toIndex < 0 || toIndex >= current.modules.length) {
+          return { nextCourse: current };
+        }
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: moveArrayItem(current.modules, fromIndex, toIndex),
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
   const handleDeleteLesson = useCallback(
     (moduleId: string, lessonId: string) => {
       applyCourseMutation((current) => {
@@ -838,6 +883,54 @@ export default function Workspace({
     [applyCourseMutation, selectedModuleId, workingCourse.modules],
   );
 
+  const handleMoveLesson = useCallback(
+    (moduleId: string, lessonId: string, direction: "up" | "down") => {
+      applyCourseMutation((current) => {
+        const moduleIndex = current.modules.findIndex(
+          (moduleItem) => moduleItem.id === moduleId,
+        );
+
+        if (moduleIndex === -1) {
+          return { nextCourse: current };
+        }
+
+        const targetModule = current.modules[moduleIndex];
+        const fromIndex = targetModule.lessons.findIndex(
+          (lessonItem) => lessonItem.id === lessonId,
+        );
+
+        if (fromIndex === -1) {
+          return { nextCourse: current };
+        }
+
+        const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
+
+        if (toIndex < 0 || toIndex >= targetModule.lessons.length) {
+          return { nextCourse: current };
+        }
+
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            lessons: moveArrayItem(moduleItem.lessons, fromIndex, toIndex),
+          };
+        });
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
   const addBlockToLesson = useCallback(
     (moduleId: string, lessonId: string, blockType: StoryboardBlockType) => {
       applyCourseMutation((current) => {
@@ -932,6 +1025,75 @@ export default function Workspace({
             type: "LESSON",
             moduleId,
             lessonId,
+          },
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
+  const handleMoveBlock = useCallback(
+    (
+      moduleId: string,
+      lessonId: string,
+      blockId: string,
+      direction: "up" | "down",
+    ) => {
+      applyCourseMutation((current) => {
+        const targetModule = current.modules.find(
+          (moduleItem) => moduleItem.id === moduleId,
+        );
+
+        if (!targetModule) {
+          return { nextCourse: current };
+        }
+
+        const targetLesson = targetModule.lessons.find(
+          (lessonItem) => lessonItem.id === lessonId,
+        );
+
+        if (!targetLesson) {
+          return { nextCourse: current };
+        }
+
+        const fromIndex = targetLesson.blocks.findIndex(
+          (blockItem) => blockItem.id === blockId,
+        );
+
+        if (fromIndex === -1) {
+          return { nextCourse: current };
+        }
+
+        const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
+
+        if (toIndex < 0 || toIndex >= targetLesson.blocks.length) {
+          return { nextCourse: current };
+        }
+
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            lessons: moduleItem.lessons.map((lessonItem) => {
+              if (lessonItem.id !== lessonId) {
+                return lessonItem;
+              }
+
+              return {
+                ...lessonItem,
+                blocks: moveArrayItem(lessonItem.blocks, fromIndex, toIndex),
+              };
+            }),
+          };
+        });
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
           },
         };
       });
@@ -1057,10 +1219,12 @@ export default function Workspace({
               </div>
             ) : null}
 
-            {renderModel.modules.map((moduleItem) => (
+            {renderModel.modules.map((moduleItem, moduleIndex) => (
               <ModuleSection
                 key={moduleItem.id}
                 moduleItem={moduleItem}
+                moduleIndex={moduleIndex}
+                moduleCount={renderModel.modules.length}
                 readOnly={readOnly}
                 selectedModuleId={selectedModuleId}
                 selectedLessonId={selectedLessonId}
@@ -1070,10 +1234,13 @@ export default function Workspace({
                 onSelectLesson={selectLesson}
                 onSelectBlock={selectBlock}
                 onModuleTitleChange={handleModuleTitleChange}
+                onMoveModule={handleMoveModule}
                 onLessonAttributesChange={handleLessonAttributesChange}
+                onMoveLesson={handleMoveLesson}
                 onAddLesson={handleAddLesson}
                 onDeleteLesson={handleDeleteLesson}
                 onAddBlock={addBlockToLesson}
+                onMoveBlock={handleMoveBlock}
                 onDeleteBlocks={handleDeleteBlocks}
                 onUpdateModuleEvaluation={handleUpdateModuleEvaluation}
                 onDeleteModuleEvaluation={handleDeleteModuleEvaluation}
