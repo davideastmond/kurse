@@ -9,6 +9,11 @@ import CourseEvaluationCanvas from "@/components/storyboard/course-evaluation/Co
 import type { LessonCanvasEditableValues } from "@/components/storyboard/lesson-canvas/Lesson-canvas";
 import ModuleSection from "@/components/storyboard/module-section/Module-section";
 import ToolBar from "@/components/storyboard/toolbar/ToolBar";
+import {
+  moveBlockInLesson,
+  moveLessonInModule,
+  moveModuleInCourse,
+} from "@/components/storyboard/workspace/reorder";
 import { courseStatusEnum } from "@/db/schema";
 import type {
   CourseEvaluation,
@@ -77,23 +82,6 @@ function createNewBlock(blockType: StoryboardBlockType) {
     duration: "5 min",
     fontSizePx: blockType === "richtext" ? 16 : undefined,
   };
-}
-
-function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
-  if (
-    fromIndex < 0 ||
-    toIndex < 0 ||
-    fromIndex >= items.length ||
-    toIndex >= items.length ||
-    fromIndex === toIndex
-  ) {
-    return items;
-  }
-
-  const nextItems = [...items];
-  const [moved] = nextItems.splice(fromIndex, 1);
-  nextItems.splice(toIndex, 0, moved);
-  return nextItems;
 }
 
 export default function Workspace({
@@ -601,25 +589,13 @@ export default function Workspace({
   const handleMoveModule = useCallback(
     (moduleId: string, direction: "up" | "down") => {
       applyCourseMutation((current) => {
-        const fromIndex = current.modules.findIndex(
-          (moduleItem) => moduleItem.id === moduleId,
-        );
-
-        if (fromIndex === -1) {
-          return { nextCourse: current };
-        }
-
-        const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
-
-        if (toIndex < 0 || toIndex >= current.modules.length) {
+        const nextCourse = moveModuleInCourse(current, moduleId, direction);
+        if (nextCourse === current) {
           return { nextCourse: current };
         }
 
         return {
-          nextCourse: {
-            ...current,
-            modules: moveArrayItem(current.modules, fromIndex, toIndex),
-          },
+          nextCourse,
         };
       });
     },
@@ -886,45 +862,18 @@ export default function Workspace({
   const handleMoveLesson = useCallback(
     (moduleId: string, lessonId: string, direction: "up" | "down") => {
       applyCourseMutation((current) => {
-        const moduleIndex = current.modules.findIndex(
-          (moduleItem) => moduleItem.id === moduleId,
+        const nextCourse = moveLessonInModule(
+          current,
+          moduleId,
+          lessonId,
+          direction,
         );
-
-        if (moduleIndex === -1) {
+        if (nextCourse === current) {
           return { nextCourse: current };
         }
-
-        const targetModule = current.modules[moduleIndex];
-        const fromIndex = targetModule.lessons.findIndex(
-          (lessonItem) => lessonItem.id === lessonId,
-        );
-
-        if (fromIndex === -1) {
-          return { nextCourse: current };
-        }
-
-        const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
-
-        if (toIndex < 0 || toIndex >= targetModule.lessons.length) {
-          return { nextCourse: current };
-        }
-
-        const nextModules = current.modules.map((moduleItem) => {
-          if (moduleItem.id !== moduleId) {
-            return moduleItem;
-          }
-
-          return {
-            ...moduleItem,
-            lessons: moveArrayItem(moduleItem.lessons, fromIndex, toIndex),
-          };
-        });
 
         return {
-          nextCourse: {
-            ...current,
-            modules: nextModules,
-          },
+          nextCourse,
         };
       });
     },
@@ -1040,61 +989,19 @@ export default function Workspace({
       direction: "up" | "down",
     ) => {
       applyCourseMutation((current) => {
-        const targetModule = current.modules.find(
-          (moduleItem) => moduleItem.id === moduleId,
+        const nextCourse = moveBlockInLesson(
+          current,
+          moduleId,
+          lessonId,
+          blockId,
+          direction,
         );
-
-        if (!targetModule) {
+        if (nextCourse === current) {
           return { nextCourse: current };
         }
-
-        const targetLesson = targetModule.lessons.find(
-          (lessonItem) => lessonItem.id === lessonId,
-        );
-
-        if (!targetLesson) {
-          return { nextCourse: current };
-        }
-
-        const fromIndex = targetLesson.blocks.findIndex(
-          (blockItem) => blockItem.id === blockId,
-        );
-
-        if (fromIndex === -1) {
-          return { nextCourse: current };
-        }
-
-        const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
-
-        if (toIndex < 0 || toIndex >= targetLesson.blocks.length) {
-          return { nextCourse: current };
-        }
-
-        const nextModules = current.modules.map((moduleItem) => {
-          if (moduleItem.id !== moduleId) {
-            return moduleItem;
-          }
-
-          return {
-            ...moduleItem,
-            lessons: moduleItem.lessons.map((lessonItem) => {
-              if (lessonItem.id !== lessonId) {
-                return lessonItem;
-              }
-
-              return {
-                ...lessonItem,
-                blocks: moveArrayItem(lessonItem.blocks, fromIndex, toIndex),
-              };
-            }),
-          };
-        });
 
         return {
-          nextCourse: {
-            ...current,
-            modules: nextModules,
-          },
+          nextCourse,
         };
       });
     },
