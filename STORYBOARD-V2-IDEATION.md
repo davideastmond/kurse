@@ -141,3 +141,77 @@ Optional follow-up (V2.1 accessibility):
 - Reorder advanced (drag + cross-parent): Medium-High
 - Welcome image MVP: Medium (roughly half-day to one focused day)
 - Combined V2.0: Medium (1-2 focused implementation sessions)
+
+## Implementation Checklist (By File)
+
+Use this checklist as the execution plan for V2.0. Items are grouped by dependency order.
+
+### 1) Shared types and payload contracts
+
+- [ ] `src/shared/types/storyboard.ts`
+  - Add `welcomeImageUrl?: string` to `StoryboardCoursePayload`.
+  - Optional now or V2.1: add `welcomeImageAlt?: string`.
+- [ ] `src/app/utils/storyboard-builder/definitions.ts`
+  - Extend `PersistedCourseMeta` and `CourseStructureJsonb.course.metadata` contract to include `welcomeImageUrl?: string`.
+  - Ensure `StoryboardRenderModel.course` exposes the field for workspace rendering.
+- [ ] `src/app/utils/storyboard-builder/story-board-builder.ts`
+  - Include `welcomeImageUrl` when serializing payload -> persisted structure.
+  - Include `welcomeImageUrl` when rehydrating persisted structure -> payload/render model.
+
+### 2) Server actions and persistence mapping
+
+- [ ] `src/app/actions/courses.ts`
+  - Extend `PersistedCourseStructure.metadata` with `welcomeImageUrl?: string`.
+  - Ensure `toPersistedStructure` writes `payload.welcomeImageUrl`.
+  - Preserve existing version conflict and authorization behavior unchanged.
+
+### 3) Data mapping at route boundaries
+
+- [ ] `src/app/admin/storyboard/[courseId]/page.tsx`
+  - Map `structure.metadata?.welcomeImageUrl` into `ApiCoursePayload`.
+  - Provide safe fallback (`""` or `undefined`) when absent.
+- [ ] `src/app/user/learn/[slug]/page.tsx`
+  - Map `structure.metadata?.welcomeImageUrl` into `ApiCoursePayload` for learner runtime.
+
+### 4) Admin storyboard UI flow (upload/replace/remove)
+
+- [ ] `src/components/storyboard/workspace/Workspace.tsx`
+  - Add a `Welcome Screen` settings card in the side panel.
+  - Show current welcome image preview if present.
+  - Add `Upload image` / `Replace image` action using `uploadToS3`.
+  - Add `Remove image` action with confirmation.
+  - On success, update local working course state and rely on autosave.
+  - On failure, keep previous value and show inline error.
+
+### 5) Learner welcome screen rendering
+
+- [ ] `src/components/course-runner/definitions.ts`
+  - Include `welcomeImageUrl` in `CourseRunnerCourse` type pick/shape.
+- [ ] `src/components/course-runner/Course-runner.tsx`
+  - Render welcome image in overview screen when present.
+  - Keep text-only fallback when not present.
+  - Ensure responsive layout (mobile and desktop) with no empty visual gap.
+
+### 6) Reordering track (V2 baseline hardening)
+
+- [ ] `src/components/storyboard/workspace/Workspace.tsx`
+  - Keep and validate module/lesson/block move handlers.
+  - Ensure selection state remains stable after each move.
+  - Confirm autosave is not triggered excessively during rapid reorder interactions.
+- [ ] `src/components/storyboard/workspace/reorder.test.ts`
+  - Add/extend tests for no-loss/no-duplication and stable ID invariants.
+
+### 7) QA and regression checklist
+
+- [ ] Upload image on a course with no prior image; verify preview + persisted reload.
+- [ ] Replace existing image; verify new URL persists and renders in learner view.
+- [ ] Remove image; verify fallback to text-only welcome screen.
+- [ ] Confirm existing image block upload behavior is unaffected.
+- [ ] Confirm version conflict handling remains unchanged for concurrent admin edits.
+- [ ] Confirm no regressions to module/lesson/block reorder persistence.
+
+### 8) Stretch tasks (V2.1)
+
+- [ ] Add `welcomeImageAlt` admin input and learner-side `alt` rendering.
+- [ ] Add drag-and-drop reorder interactions.
+- [ ] Add cross-parent moves (lesson between modules, block between lessons).
