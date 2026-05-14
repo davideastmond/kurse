@@ -18,6 +18,7 @@ type SeededCourseStructure = {
     synopsis?: string;
     audience?: string;
     estimatedDuration?: string;
+    welcomeImages?: ApiCoursePayload["welcomeImages"];
   };
 };
 
@@ -44,6 +45,7 @@ function toApiCoursePayload(row: SeededCourseRecord): ApiCoursePayload {
     synopsis: structure.metadata?.synopsis ?? row.description,
     audience: structure.metadata?.audience ?? "",
     estimatedDuration: structure.metadata?.estimatedDuration ?? "",
+    welcomeImages: structure.metadata?.welcomeImages ?? [],
     courseEvaluation: structure.courseEvaluation,
     modules: Array.isArray(structure.modules) ? structure.modules : [],
   };

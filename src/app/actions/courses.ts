@@ -34,6 +34,7 @@ type PersistedCourseStructure = {
     synopsis: string;
     audience: string;
     estimatedDuration: string;
+    welcomeImages?: ApiCoursePayload["welcomeImages"];
   };
 };
 
@@ -89,6 +90,7 @@ function toPersistedStructure(
       synopsis: payload.synopsis,
       audience: payload.audience,
       estimatedDuration: payload.estimatedDuration,
+      welcomeImages: payload.welcomeImages,
     },
   };
 }
@@ -186,6 +188,7 @@ export async function createCourse(
       synopsis: description,
       audience: "",
       estimatedDuration: "",
+      welcomeImages: [],
     },
   };
 

@@ -9,6 +9,7 @@ import EvaluationRunner from "@/components/course-runner/Evaluation-runner";
 import LessonStage from "@/components/course-runner/Lesson-stage";
 import RunnerSidebar from "@/components/course-runner/Runner-sidebar";
 import type { StoryboardModule } from "@/shared/types/storyboard";
+import Image from "next/image";
 import { useMemo, useState, useTransition } from "react";
 
 // ---------------------------------------------------------------------------
@@ -63,9 +64,7 @@ function deriveProgressState(
   }
 
   const courseEvalUnlocked = modules.every((mod) => {
-    const lessonsDone = mod.lessons.every((l) =>
-      completedLessonIds.has(l.id),
-    );
+    const lessonsDone = mod.lessons.every((l) => completedLessonIds.has(l.id));
     const evalPassed = !mod.evaluation || passedModuleEvalIds.has(mod.id);
     return lessonsDone && evalPassed;
   });
@@ -475,6 +474,27 @@ export default function CourseRunner({
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">
               Welcome to {course.title}
             </h2>
+
+            {course.welcomeImages && course.welcomeImages.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {course.welcomeImages.map((welcomeImage) => (
+                  <figure
+                    key={welcomeImage.id}
+                    className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+                  >
+                    <Image
+                      src={welcomeImage.url}
+                      alt={welcomeImage.altText?.trim() || course.title}
+                      width={1400}
+                      height={900}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                      className="h-56 w-full object-cover"
+                    />
+                  </figure>
+                ))}
+              </div>
+            ) : null}
+
             <p className="max-w-3xl text-sm leading-7 text-muted-foreground">
               {course.synopsis}
             </p>

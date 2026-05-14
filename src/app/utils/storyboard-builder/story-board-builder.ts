@@ -105,6 +105,40 @@ function validatePayload(
     );
   }
 
+  if (typeof payload.welcomeImages !== "undefined") {
+    if (!Array.isArray(payload.welcomeImages)) {
+      pushInvalidField(
+        "course.welcomeImages",
+        "welcome images must be an array when provided.",
+      );
+    } else {
+      payload.welcomeImages.forEach((image, imageIndex) => {
+        const imagePath = `course.welcomeImages[${imageIndex}]`;
+
+        if (!isNonEmptyString(image.id)) {
+          pushInvalidField(`${imagePath}.id`, "welcome image id is required.");
+        }
+
+        if (!isNonEmptyString(image.url)) {
+          pushInvalidField(
+            `${imagePath}.url`,
+            "welcome image url is required.",
+          );
+        }
+
+        if (
+          typeof image.altText !== "undefined" &&
+          typeof image.altText !== "string"
+        ) {
+          pushInvalidField(
+            `${imagePath}.altText`,
+            "welcome image alt text must be a string when provided.",
+          );
+        }
+      });
+    }
+  }
+
   if (!Array.isArray(payload.modules)) {
     pushInvalidField("course.modules", "course modules must be an array.");
     return errors;
@@ -311,6 +345,7 @@ function buildStructureFromPayload(
       synopsis: payload.synopsis,
       audience: payload.audience,
       estimatedDuration: payload.estimatedDuration,
+      welcomeImages: payload.welcomeImages,
       courseEvaluation: payload.courseEvaluation,
     },
     moduleOrder: [],
