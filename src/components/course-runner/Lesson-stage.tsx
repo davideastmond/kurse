@@ -101,8 +101,8 @@ export default function LessonStage({
   onInlineQuizGateChange,
 }: LessonStageProps) {
   return (
-    <section className="space-y-5">
-      <header className="p-6">
+    <section className="flex min-h-screen flex-col items-center justify-center space-y-5 px-4">
+      <header className="w-full max-w-3xl p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {module.title}
         </p>
@@ -116,7 +116,7 @@ export default function LessonStage({
         ) : null}
       </header>
 
-      <div className="space-y-4">
+      <div className="w-full max-w-3xl space-y-4">
         {lesson.blocks.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-6 text-sm text-muted-foreground">
             This lesson does not contain content blocks yet.
@@ -238,7 +238,7 @@ export default function LessonStage({
         })}
       </div>
 
-      <footer className="flex items-center justify-between bg-surface p-4">
+      <footer className="flex w-full max-w-3xl items-center justify-between bg-surface p-4">
         <button
           type="button"
           onClick={onPrevious}
