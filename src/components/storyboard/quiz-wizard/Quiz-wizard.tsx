@@ -251,7 +251,7 @@ export default function QuizWizard({
           {questions.map((question, questionIndex) => (
             <section
               key={question.id}
-              className="space-y-4 rounded-2xl border border-violet-200 bg-violet-50/40 p-4"
+              className="space-y-4 rounded-2xl border border-violet-200 p-4"
             >
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">
