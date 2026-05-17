@@ -198,4 +198,24 @@ describe("storyboard reorder utilities", () => {
       "b2",
     ]);
   });
+
+  it("returns INVALID_FIELD when a welcome image is not an object", () => {
+    const malformed = {
+      ...createFixture(),
+      welcomeImages: [null],
+    } as unknown as ApiCoursePayload;
+
+    const result = StoryboardBuilder.fromApi(malformed);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+
+    expect(result.errors).toContainEqual({
+      code: "INVALID_FIELD",
+      path: "course.welcomeImages[0]",
+      message: "welcome image must be an object.",
+    });
+  });
 });

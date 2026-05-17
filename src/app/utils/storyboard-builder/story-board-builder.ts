@@ -35,6 +35,10 @@ function isValidRichtextFontSize(value: unknown): value is number {
   );
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
+}
+
 function cloneJsonValue<T>(value: T): T {
   if (typeof globalThis.structuredClone === "function") {
     return globalThis.structuredClone(value);
@@ -114,6 +118,11 @@ function validatePayload(
     } else {
       payload.welcomeImages.forEach((image, imageIndex) => {
         const imagePath = `course.welcomeImages[${imageIndex}]`;
+
+        if (!isRecord(image)) {
+          pushInvalidField(imagePath, "welcome image must be an object.");
+          return;
+        }
 
         if (!isNonEmptyString(image.id)) {
           pushInvalidField(`${imagePath}.id`, "welcome image id is required.");
