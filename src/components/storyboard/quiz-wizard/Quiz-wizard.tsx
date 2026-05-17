@@ -233,8 +233,12 @@ export default function QuizWizard({
     try {
       const generatedQuiz = await onGenerateWithAi(aiQuestionCount);
       setDraft(normalizeQuiz(generatedQuiz));
-    } catch {
-      setErrorMessage("Unable to generate quiz with AI right now.");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message
+          : "Unable to generate quiz with AI right now.";
+      setErrorMessage(errorMessage);
     } finally {
       setIsGeneratingWithAi(false);
     }
