@@ -1,9 +1,12 @@
 "use server";
 
+import { generateQuizQuestions } from "@/app/utils/claude-ai/claude-ai";
+import { getRedisClientConnected } from "@/app/utils/redis/redis-client";
 import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
 import { getSessionSafely } from "@/auth/session";
 import { getDb } from "@/db";
 import { courses } from "@/db/schema";
+import type { StoryboardQuiz } from "@/shared/types/storyboard";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
@@ -53,6 +56,176 @@ type CreateCourseResult =
       ok: false;
       message: string;
     };
+
+export type GenerateCourseEvaluationQuizInput = {
+  courseId: string;
+  numberOfQuestions?: number;
+};
+
+export type GenerateCourseEvaluationQuizResult =
+  | {
+      ok: true;
+      quiz: StoryboardQuiz;
+    }
+  | {
+      ok: false;
+      code:
+        | "VALIDATION"
+        | "FORBIDDEN"
+        | "NOT_FOUND"
+        | "RATE_LIMITED"
+        | "UNKNOWN";
+      message: string;
+    };
+
+const QUIZ_GENERATION_COOLDOWN_SECONDS = 20;
+const QUIZ_GENERATION_HOURLY_LIMIT = 30;
+
+function getHourlyBucket() {
+  return new Date().toISOString().slice(0, 13);
+}
+
+function formatRetryMessage(retryAfterSeconds: number) {
+  if (retryAfterSeconds <= 1) {
+    return "Please wait a second and try again.";
+  }
+
+  if (retryAfterSeconds < 60) {
+    return `Please wait ${retryAfterSeconds}s before generating another quiz.`;
+  }
+
+  const minutes = Math.ceil(retryAfterSeconds / 60);
+  return `Rate limit reached. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+}
+
+async function evaluateQuizGenerationRateLimit(input: {
+  userId: string;
+  courseId: string;
+}): Promise<{ allowed: true } | { allowed: false; retryAfterSeconds: number }> {
+  try {
+    const redis = await getRedisClientConnected();
+    const cooldownKey = `quiz-gen:cooldown:${input.userId}:${input.courseId}`;
+    const hourlyKey = `quiz-gen:hour:${input.userId}:${getHourlyBucket()}`;
+
+    const cooldownSetResult = await redis.set(cooldownKey, "1", {
+      EX: QUIZ_GENERATION_COOLDOWN_SECONDS,
+      NX: true,
+    });
+
+    if (!cooldownSetResult) {
+      const ttl = await redis.ttl(cooldownKey);
+      return {
+        allowed: false,
+        retryAfterSeconds:
+          typeof ttl === "number" && ttl > 0
+            ? ttl
+            : QUIZ_GENERATION_COOLDOWN_SECONDS,
+      };
+    }
+
+    const currentHourCount = await redis.incr(hourlyKey);
+
+    if (currentHourCount === 1) {
+      await redis.expire(hourlyKey, 3600);
+    }
+
+    if (currentHourCount > QUIZ_GENERATION_HOURLY_LIMIT) {
+      const hourTtl = await redis.ttl(hourlyKey);
+      return {
+        allowed: false,
+        retryAfterSeconds:
+          typeof hourTtl === "number" && hourTtl > 0 ? hourTtl : 3600,
+      };
+    }
+
+    return { allowed: true };
+  } catch (error) {
+    console.error(
+      "Redis rate limit check failed, continuing without blocking:",
+      error,
+    );
+    return { allowed: true };
+  }
+}
+
+function compactText(value: string) {
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function appendContextLine(lines: string[], label: string, value?: string) {
+  const normalized = value ? compactText(value) : "";
+  if (!normalized) {
+    return;
+  }
+
+  lines.push(`${label}: ${normalized}`);
+}
+
+function buildCourseQuizContext(args: {
+  title: string;
+  description: string;
+  structure: PersistedCourseStructure;
+}) {
+  const lines: string[] = [];
+
+  appendContextLine(lines, "Course title", args.title);
+  appendContextLine(lines, "Course description", args.description);
+  appendContextLine(lines, "Synopsis", args.structure.metadata?.synopsis);
+  appendContextLine(lines, "Audience", args.structure.metadata?.audience);
+  appendContextLine(
+    lines,
+    "Estimated duration",
+    args.structure.metadata?.estimatedDuration,
+  );
+
+  const modules = Array.isArray(args.structure.modules)
+    ? args.structure.modules
+    : [];
+
+  for (const [moduleIndex, moduleItem] of modules.entries()) {
+    appendContextLine(
+      lines,
+      `Module ${moduleIndex + 1} title`,
+      moduleItem.title,
+    );
+
+    for (const [lessonIndex, lessonItem] of moduleItem.lessons.entries()) {
+      appendContextLine(
+        lines,
+        `Module ${moduleIndex + 1} Lesson ${lessonIndex + 1} title`,
+        lessonItem.title,
+      );
+      appendContextLine(
+        lines,
+        `Module ${moduleIndex + 1} Lesson ${lessonIndex + 1} objective`,
+        lessonItem.objective,
+      );
+
+      for (const [blockIndex, blockItem] of lessonItem.blocks.entries()) {
+        appendContextLine(
+          lines,
+          `Module ${moduleIndex + 1} Lesson ${lessonIndex + 1} Block ${blockIndex + 1} title`,
+          blockItem.title,
+        );
+        appendContextLine(
+          lines,
+          `Module ${moduleIndex + 1} Lesson ${lessonIndex + 1} Block ${blockIndex + 1} detail`,
+          blockItem.detail,
+        );
+      }
+    }
+  }
+
+  const rawContext = lines.join("\n");
+  if (rawContext.length <= 15000) {
+    return rawContext;
+  }
+
+  return `${rawContext.slice(0, 15000)}\n[TRUNCATED]`;
+}
 
 function createEntityId(prefix: "module" | "lesson") {
   const randomPart =
@@ -322,6 +495,128 @@ export async function saveCourseStoryboard(
       ok: false,
       code: "UNKNOWN",
       message: "Unable to save storyboard right now.",
+    };
+  }
+}
+
+export async function generateCourseEvaluationQuiz(
+  input: GenerateCourseEvaluationQuizInput,
+): Promise<GenerateCourseEvaluationQuizResult> {
+  const session = await getSessionSafely();
+  const userId = session?.user?.id;
+  const userRole = session?.user?.role;
+
+  if (!userId || userRole !== "ADMIN") {
+    return {
+      ok: false,
+      code: "FORBIDDEN",
+      message: "You are not authorized to generate quizzes.",
+    };
+  }
+
+  if (!input.courseId.trim()) {
+    return {
+      ok: false,
+      code: "VALIDATION",
+      message: "courseId is required.",
+    };
+  }
+
+  if (
+    input.numberOfQuestions !== undefined &&
+    (!Number.isFinite(input.numberOfQuestions) || input.numberOfQuestions < 1)
+  ) {
+    return {
+      ok: false,
+      code: "VALIDATION",
+      message: "numberOfQuestions must be a positive number.",
+    };
+  }
+
+  const db = getDb();
+
+  if (!db) {
+    return {
+      ok: false,
+      code: "UNKNOWN",
+      message: "Database is not configured.",
+    };
+  }
+
+  const [courseRow] = await db
+    .select({
+      title: courses.title,
+      description: courses.description,
+      createdById: courses.createdById,
+      structure: courses.structure,
+    })
+    .from(courses)
+    .where(eq(courses.id, input.courseId))
+    .limit(1);
+
+  if (!courseRow) {
+    return {
+      ok: false,
+      code: "NOT_FOUND",
+      message: "Course not found.",
+    };
+  }
+
+  if (courseRow.createdById !== userId) {
+    return {
+      ok: false,
+      code: "FORBIDDEN",
+      message: "You can only generate quizzes for courses you created.",
+    };
+  }
+
+  const rateLimit = await evaluateQuizGenerationRateLimit({
+    userId,
+    courseId: input.courseId,
+  });
+
+  if (!rateLimit.allowed) {
+    return {
+      ok: false,
+      code: "RATE_LIMITED",
+      message: formatRetryMessage(rateLimit.retryAfterSeconds),
+    };
+  }
+
+  const structure = (courseRow.structure ?? {
+    courseId: input.courseId,
+    modules: [],
+    metadata: {
+      synopsis: "",
+      audience: "",
+      estimatedDuration: "",
+    },
+  }) as PersistedCourseStructure;
+
+  const courseContent = buildCourseQuizContext({
+    title: courseRow.title,
+    description: courseRow.description,
+    structure,
+  });
+
+  try {
+    const quiz = await generateQuizQuestions({
+      numberOfQuestions: input.numberOfQuestions ?? 5,
+      courseTitle: courseRow.title,
+      courseContent,
+    });
+
+    return {
+      ok: true,
+      quiz,
+    };
+  } catch (error) {
+    console.error("Error generating quiz questions:", error);
+
+    return {
+      ok: false,
+      code: "UNKNOWN",
+      message: "Unable to generate quiz questions right now.",
     };
   }
 }
