@@ -38,10 +38,10 @@ Verifies the insert trigger sets `courses.structure.courseId` to the database-ge
 
 ## AI Quiz Generation Rate Limits
 
-AI quiz generation is rate-limited server-side per user:
+AI quiz generation is rate-limited server-side:
 
 - Cooldown: 20 seconds between requests.
-- Hourly cap: 30 requests per user across all courses.
+- Hourly cap: 30 requests per user across all courses (hourly limit is global per user, not per course).
 
 ## Learn More
 
