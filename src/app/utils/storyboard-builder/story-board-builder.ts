@@ -36,7 +36,7 @@ function isValidRichtextFontSize(value: unknown): value is number {
 }
 
 function isNonNullObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object";
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function cloneJsonValue<T>(value: T): T {
