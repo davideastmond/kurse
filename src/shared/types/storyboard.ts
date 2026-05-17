@@ -71,6 +71,12 @@ export type CourseEvaluation = {
   questions: QuizQuestion[];
 };
 
+export type WelcomeScreenImage = {
+  id: string;
+  url: string;
+  altText?: string;
+};
+
 export type StoryboardCoursePayload = {
   id: string;
   title: string;
@@ -80,6 +86,7 @@ export type StoryboardCoursePayload = {
   synopsis: string;
   audience: string;
   estimatedDuration: string;
+  welcomeImages?: WelcomeScreenImage[];
   courseEvaluation?: CourseEvaluation;
   modules: StoryboardModule[];
 };

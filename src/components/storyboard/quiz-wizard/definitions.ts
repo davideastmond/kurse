@@ -4,6 +4,8 @@ export type QuizWizardProps = {
   initialQuiz?: StoryboardQuiz;
   onClose: () => void;
   onSave: (quiz: StoryboardQuiz) => void;
+  onGenerateWithAi?: (numberOfQuestions: number) => Promise<StoryboardQuiz>;
+  defaultAiQuestionCount?: number;
 };
 
 type QuizWizardOptionDraft = {

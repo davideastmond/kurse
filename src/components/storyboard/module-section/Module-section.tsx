@@ -12,6 +12,8 @@ type PendingDelete =
 
 export default function ModuleSection({
   moduleItem,
+  moduleIndex,
+  moduleCount,
   readOnly = false,
   selectedModuleId,
   selectedLessonId,
@@ -22,9 +24,12 @@ export default function ModuleSection({
   onSelectBlock,
   onLessonAttributesChange,
   onModuleTitleChange,
+  onMoveModule,
+  onMoveLesson,
   onAddLesson,
   onDeleteLesson,
   onAddBlock,
+  onMoveBlock,
   onDeleteBlocks,
   onUpdateModuleEvaluation,
   onDeleteModuleEvaluation,
@@ -124,6 +129,42 @@ export default function ModuleSection({
                   >
                     Rename
                   </button>
+                  <div className="inline-flex items-center gap-1 rounded-full border border-border bg-surface p-1">
+                    <button
+                      type="button"
+                      onClick={() => onMoveModule(moduleItem.id, "up")}
+                      disabled={moduleIndex === 0}
+                      aria-label={`Move module ${moduleItem.title} up`}
+                      title="Move module up"
+                      className="inline-flex items-center justify-center rounded-full border border-border bg-surface p-1.5 text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="h-3.5 w-3.5"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 6l-7 7h4v5h6v-5h4z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onMoveModule(moduleItem.id, "down")}
+                      disabled={moduleIndex === moduleCount - 1}
+                      aria-label={`Move module ${moduleItem.title} down`}
+                      title="Move module down"
+                      className="inline-flex items-center justify-center rounded-full border border-border bg-surface p-1.5 text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="h-3.5 w-3.5"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 18l7-7h-4V6H9v5H5z" />
+                      </svg>
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
@@ -164,7 +205,7 @@ export default function ModuleSection({
       </div>
 
       <div className="space-y-5">
-        {moduleItem.lessons.map((lessonItem) => {
+        {moduleItem.lessons.map((lessonItem, lessonIndex) => {
           const isLessonSelected = selectedLessonId === lessonItem.id;
 
           return (
@@ -206,6 +247,34 @@ export default function ModuleSection({
                           lessonId: lessonItem.id,
                           lessonTitle: lessonItem.title,
                         });
+                      }
+                }
+                onMoveLessonUp={
+                  readOnly || lessonIndex === 0
+                    ? undefined
+                    : () => {
+                        onMoveLesson(moduleItem.id, lessonItem.id, "up");
+                      }
+                }
+                onMoveLessonDown={
+                  readOnly || lessonIndex === moduleItem.lessons.length - 1
+                    ? undefined
+                    : () => {
+                        onMoveLesson(moduleItem.id, lessonItem.id, "down");
+                      }
+                }
+                canMoveLessonUp={lessonIndex > 0}
+                canMoveLessonDown={lessonIndex < moduleItem.lessons.length - 1}
+                onMoveBlock={
+                  readOnly
+                    ? undefined
+                    : (blockId, direction) => {
+                        onMoveBlock(
+                          moduleItem.id,
+                          lessonItem.id,
+                          blockId,
+                          direction,
+                        );
                       }
                 }
                 onDeleteBlocks={

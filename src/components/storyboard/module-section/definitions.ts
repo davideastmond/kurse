@@ -7,6 +7,8 @@ import type {
 
 export type ModuleSectionProps = {
   moduleItem: StoryboardRenderModule;
+  moduleIndex: number;
+  moduleCount: number;
   readOnly?: boolean;
   selectedModuleId?: string;
   selectedLessonId?: string;
@@ -16,9 +18,15 @@ export type ModuleSectionProps = {
   onSelectLesson: (moduleId: string, lessonId: string) => void;
   onSelectBlock: (moduleId: string, lessonId: string, blockId: string) => void;
   onModuleTitleChange: (moduleId: string, title: string) => void;
+  onMoveModule: (moduleId: string, direction: "up" | "down") => void;
   onLessonAttributesChange: (
     lessonId: string,
     values: LessonCanvasEditableValues,
+  ) => void;
+  onMoveLesson: (
+    moduleId: string,
+    lessonId: string,
+    direction: "up" | "down",
   ) => void;
   onAddLesson: (moduleId: string) => void;
   onDeleteLesson: (moduleId: string, lessonId: string) => void;
@@ -26,6 +34,12 @@ export type ModuleSectionProps = {
     moduleId: string,
     lessonId: string,
     blockType: StoryboardBlockType,
+  ) => void;
+  onMoveBlock: (
+    moduleId: string,
+    lessonId: string,
+    blockId: string,
+    direction: "up" | "down",
   ) => void;
   onDeleteBlocks: (
     moduleId: string,

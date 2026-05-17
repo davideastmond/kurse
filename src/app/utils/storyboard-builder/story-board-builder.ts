@@ -35,6 +35,10 @@ function isValidRichtextFontSize(value: unknown): value is number {
   );
 }
 
+function isNonNullObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 function cloneJsonValue<T>(value: T): T {
   if (typeof globalThis.structuredClone === "function") {
     return globalThis.structuredClone(value);
@@ -103,6 +107,45 @@ function validatePayload(
       "course.version",
       "course version must be an integer greater than 0.",
     );
+  }
+
+  if (typeof payload.welcomeImages !== "undefined") {
+    if (!Array.isArray(payload.welcomeImages)) {
+      pushInvalidField(
+        "course.welcomeImages",
+        "welcome images must be an array when provided.",
+      );
+    } else {
+      payload.welcomeImages.forEach((image, imageIndex) => {
+        const imagePath = `course.welcomeImages[${imageIndex}]`;
+
+        if (!isNonNullObject(image)) {
+          pushInvalidField(imagePath, "welcome image must be an object.");
+          return;
+        }
+
+        if (!isNonEmptyString(image.id)) {
+          pushInvalidField(`${imagePath}.id`, "welcome image id is required.");
+        }
+
+        if (!isNonEmptyString(image.url)) {
+          pushInvalidField(
+            `${imagePath}.url`,
+            "welcome image url is required.",
+          );
+        }
+
+        if (
+          typeof image.altText !== "undefined" &&
+          typeof image.altText !== "string"
+        ) {
+          pushInvalidField(
+            `${imagePath}.altText`,
+            "welcome image alt text must be a string when provided.",
+          );
+        }
+      });
+    }
   }
 
   if (!Array.isArray(payload.modules)) {
@@ -311,6 +354,7 @@ function buildStructureFromPayload(
       synopsis: payload.synopsis,
       audience: payload.audience,
       estimatedDuration: payload.estimatedDuration,
+      welcomeImages: payload.welcomeImages,
       courseEvaluation: payload.courseEvaluation,
     },
     moduleOrder: [],

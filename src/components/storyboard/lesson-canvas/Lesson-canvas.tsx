@@ -26,6 +26,11 @@ type LessonCanvasProps = {
   onLessonAttributesChange?: (values: LessonCanvasEditableValues) => void;
   onDeleteBlocks?: (blockIds: string[]) => void;
   onDeleteLesson?: () => void;
+  onMoveLessonUp?: () => void;
+  onMoveLessonDown?: () => void;
+  canMoveLessonUp?: boolean;
+  canMoveLessonDown?: boolean;
+  onMoveBlock?: (blockId: string, direction: "up" | "down") => void;
   className?: string;
 };
 
@@ -62,6 +67,11 @@ export default function LessonCanvas({
   onLessonAttributesChange,
   onDeleteBlocks,
   onDeleteLesson,
+  onMoveLessonUp,
+  onMoveLessonDown,
+  canMoveLessonUp = false,
+  canMoveLessonDown = false,
+  onMoveBlock,
   className,
 }: LessonCanvasProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -288,25 +298,71 @@ export default function LessonCanvas({
               </button>
             ) : null}
             {!isBatchEditing && isSelected && onDeleteLesson ? (
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onDeleteLesson();
-                }}
-                aria-label="Delete lesson"
-                title="Delete lesson"
-                className="inline-flex items-center justify-center rounded-full border border-danger/40 bg-danger/15 p-1.5 text-danger transition hover:bg-danger/25"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-3.5 w-3.5"
-                  aria-hidden="true"
+              <>
+                {onMoveLessonUp || onMoveLessonDown ? (
+                  <div className="inline-flex items-center gap-1 rounded-full border border-border bg-surface p-1">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onMoveLessonUp?.();
+                      }}
+                      aria-label="Move lesson up"
+                      title="Move lesson up"
+                      disabled={!canMoveLessonUp}
+                      className="inline-flex items-center justify-center rounded-full border border-border bg-surface p-1.5 text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="h-3.5 w-3.5"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 6l-7 7h4v5h6v-5h4z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onMoveLessonDown?.();
+                      }}
+                      aria-label="Move lesson down"
+                      title="Move lesson down"
+                      disabled={!canMoveLessonDown}
+                      className="inline-flex items-center justify-center rounded-full border border-border bg-surface p-1.5 text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="h-3.5 w-3.5"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 18l7-7h-4V6H9v5H5z" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDeleteLesson();
+                  }}
+                  aria-label="Delete lesson"
+                  title="Delete lesson"
+                  className="inline-flex items-center justify-center rounded-full border border-danger/40 bg-danger/15 p-1.5 text-danger transition hover:bg-danger/25"
                 >
-                  <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9zm0 5h2v9H9V8zm4 0h2v9h-2V8z" />
-                </svg>
-              </button>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="h-3.5 w-3.5"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9zm0 5h2v9H9V8zm4 0h2v9h-2V8z" />
+                  </svg>
+                </button>
+              </>
             ) : null}
           </div>
         )}
@@ -365,6 +421,50 @@ export default function LessonCanvas({
                     {BLOCK_TYPE_LABELS[block.type]}
                   </span>
                   <div className="flex items-center gap-2">
+                    {onMoveBlock ? (
+                      <div className="inline-flex items-center gap-1 rounded-full border border-border bg-surface p-1">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onMoveBlock(block.id, "up");
+                          }}
+                          aria-label={`Move block ${block.title} up`}
+                          title="Move block up"
+                          disabled={blocks[0]?.id === block.id}
+                          className="inline-flex items-center justify-center rounded-full border border-border bg-surface p-1 text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="h-3 w-3"
+                            aria-hidden="true"
+                          >
+                            <path d="M12 6l-7 7h4v5h6v-5h4z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onMoveBlock(block.id, "down");
+                          }}
+                          aria-label={`Move block ${block.title} down`}
+                          title="Move block down"
+                          disabled={blocks[blocks.length - 1]?.id === block.id}
+                          className="inline-flex items-center justify-center rounded-full border border-border bg-surface p-1 text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="h-3 w-3"
+                            aria-hidden="true"
+                          >
+                            <path d="M12 18l7-7h-4V6H9v5H5z" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : null}
                     {isBatchEditing ? (
                       <input
                         type="checkbox"

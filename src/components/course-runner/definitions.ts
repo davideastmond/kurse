@@ -14,6 +14,7 @@ export type CourseRunnerCourse = Pick<
   | "slug"
   | "synopsis"
   | "estimatedDuration"
+  | "welcomeImages"
   | "courseEvaluation"
 > & {
   modules: StoryboardModule[];
