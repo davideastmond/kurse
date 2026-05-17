@@ -39,9 +39,11 @@ export default function RichtextBlockDetail({
   );
 
   const handleSave = useCallback(() => {
+    const normalizedTitle = title.trim();
+
     if (moduleId && lessonId && onUpdateBlock) {
       onUpdateBlock(moduleId, lessonId, block.id, {
-        title: title || block.title,
+        title: normalizedTitle,
         detail: detail || block.detail,
         duration: duration || block.duration,
         fontSizePx,

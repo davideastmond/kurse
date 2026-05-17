@@ -110,11 +110,17 @@ export default function QuizWizard({
   initialQuiz,
   onClose,
   onSave,
+  onGenerateWithAi,
+  defaultAiQuestionCount = 5,
 }: QuizWizardProps) {
   const [{ title, questions }, setDraft] = useState(() =>
     normalizeQuiz(initialQuiz),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isGeneratingWithAi, setIsGeneratingWithAi] = useState(false);
+  const [aiQuestionCount, setAiQuestionCount] = useState(
+    defaultAiQuestionCount,
+  );
 
   const updateQuestion = useCallback(
     (
@@ -216,6 +222,28 @@ export default function QuizWizard({
     onSave(nextQuiz);
   }, [onSave, questions, title]);
 
+  const handleGenerateWithAi = useCallback(async () => {
+    if (!onGenerateWithAi || isGeneratingWithAi) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsGeneratingWithAi(true);
+
+    try {
+      const generatedQuiz = await onGenerateWithAi(aiQuestionCount);
+      setDraft(normalizeQuiz(generatedQuiz));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message
+          : "Unable to generate quiz with AI right now.";
+      setErrorMessage(errorMessage);
+    } finally {
+      setIsGeneratingWithAi(false);
+    }
+  }, [aiQuestionCount, isGeneratingWithAi, onGenerateWithAi]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/35 p-4">
       <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-violet-200 bg-surface p-6 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
@@ -247,11 +275,50 @@ export default function QuizWizard({
           />
         </div>
 
+        {onGenerateWithAi ? (
+          <div className="mt-4 rounded-2xl border border-violet-200/70 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">
+              AI Quiz Draft
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <label className="text-xs font-medium text-violet-800">
+                Questions
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={12}
+                value={aiQuestionCount}
+                onChange={(event) => {
+                  const parsed = Number.parseInt(event.target.value, 10);
+                  if (Number.isFinite(parsed)) {
+                    setAiQuestionCount(Math.max(1, Math.min(12, parsed)));
+                  }
+                }}
+                className="w-20 rounded-lg border border-violet-300 px-2 py-1.5 text-sm text-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void handleGenerateWithAi();
+                }}
+                disabled={isGeneratingWithAi}
+                className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isGeneratingWithAi ? "Generating..." : "Generate With AI"}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-violet-800/80">
+              Generates a draft from course content. Review before saving.
+            </p>
+          </div>
+        ) : null}
+
         <div className="mt-6 space-y-4">
           {questions.map((question, questionIndex) => (
             <section
               key={question.id}
-              className="space-y-4 rounded-2xl border border-violet-200 bg-violet-50/40 p-4"
+              className="space-y-4 rounded-2xl border border-violet-200 p-4"
             >
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">
@@ -360,12 +427,14 @@ export default function QuizWizard({
         <div className="mt-6 flex gap-2">
           <button
             onClick={handleSave}
+            disabled={isGeneratingWithAi}
             className="flex-1 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-violet-700"
           >
             Save Quiz
           </button>
           <button
             onClick={onClose}
+            disabled={isGeneratingWithAi}
             className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted"
           >
             Cancel

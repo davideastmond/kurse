@@ -1,25 +1,35 @@
 "use client";
 
 import { saveCourseStoryboard } from "@/app/actions/courses";
+import { uploadToS3 } from "@/app/actions/s3-uploader";
 import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
 import { StoryboardBuilder } from "@/app/utils/storyboard-builder/story-board-builder";
+import PromptDialog from "@/components/dialogs/Prompt-dialog";
 import BlockDetailRenderer from "@/components/storyboard/blocks/Block-detail-renderer";
 import CourseEvaluationCanvas from "@/components/storyboard/course-evaluation/Course-evaluation-canvas";
 import type { LessonCanvasEditableValues } from "@/components/storyboard/lesson-canvas/Lesson-canvas";
 import ModuleSection from "@/components/storyboard/module-section/Module-section";
 import ToolBar from "@/components/storyboard/toolbar/ToolBar";
+import {
+  moveBlockInLesson,
+  moveLessonInModule,
+  moveModuleInCourse,
+} from "@/components/storyboard/workspace/reorder";
 import { courseStatusEnum } from "@/db/schema";
 import type {
   CourseEvaluation,
   ModuleEvaluation,
   StoryboardBlock,
   StoryboardBlockType,
+  WelcomeScreenImage,
 } from "@/shared/types/storyboard";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type WorkspaceProps = {
   initialCourse: ApiCoursePayload;
   courseRecordId: string;
+  readOnly?: boolean;
 };
 
 type StoryboardSelection =
@@ -56,8 +66,11 @@ const DEFAULT_BLOCK_TITLE: Record<StoryboardBlockType, string> = {
 };
 
 const COURSE_STATUS_OPTIONS = courseStatusEnum.enumValues;
+const MAX_WELCOME_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
-function createEntityId(prefix: "module" | "lesson" | "block" | "evaluation") {
+function createEntityId(
+  prefix: "module" | "lesson" | "block" | "evaluation" | "welcome_image",
+) {
   const randomPart =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID().replaceAll("-", "").slice(0, 12)
@@ -80,14 +93,26 @@ function createNewBlock(blockType: StoryboardBlockType) {
 export default function Workspace({
   initialCourse,
   courseRecordId,
+  readOnly = false,
 }: WorkspaceProps) {
   const [workingCourse, setWorkingCourse] =
     useState<ApiCoursePayload>(initialCourse);
   const [selection, setSelection] = useState<StoryboardSelection | null>(null);
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
+  const [isModulePromptOpen, setIsModulePromptOpen] = useState(false);
+  const [isWelcomeImageUploading, setIsWelcomeImageUploading] = useState(false);
+  const [welcomeImageError, setWelcomeImageError] = useState<string | null>(
+    null,
+  );
+  const [isWelcomeImagesPanelOpen, setIsWelcomeImagesPanelOpen] =
+    useState(false);
+  const [pendingReplaceImageId, setPendingReplaceImageId] = useState<
+    string | null
+  >(null);
 
   const workingCourseRef = useRef<ApiCoursePayload>(initialCourse);
   const courseEvaluationRef = useRef<HTMLDivElement | null>(null);
+  const welcomeImageInputRef = useRef<HTMLInputElement | null>(null);
   const latestSavedVersionRef = useRef<number>(initialCourse.version);
   const pendingSaveRef = useRef<ApiCoursePayload | null>(null);
   const isSavingRef = useRef(false);
@@ -161,14 +186,14 @@ export default function Workspace({
 
   const queueSave = useCallback(
     (nextCourse: ApiCoursePayload) => {
-      if (saveBlockedRef.current) {
+      if (readOnly || saveBlockedRef.current) {
         return;
       }
 
       pendingSaveRef.current = nextCourse;
       void persistLatestCourse();
     },
-    [persistLatestCourse],
+    [persistLatestCourse, readOnly],
   );
 
   const builderResult = useMemo(
@@ -328,6 +353,10 @@ export default function Workspace({
         nextSelection?: StoryboardSelection | null;
       },
     ) => {
+      if (readOnly) {
+        return;
+      }
+
       const result = mutator(workingCourseRef.current);
 
       workingCourseRef.current = result.nextCourse;
@@ -338,7 +367,7 @@ export default function Workspace({
         setSelection(result.nextSelection);
       }
     },
-    [queueSave],
+    [queueSave, readOnly],
   );
 
   const selectModule = useCallback((moduleId: string) => {
@@ -509,23 +538,162 @@ export default function Workspace({
     [applyCourseMutation],
   );
 
+  const handleDeleteModule = useCallback(
+    (moduleId: string) => {
+      applyCourseMutation((current) => {
+        const moduleIndex = current.modules.findIndex(
+          (moduleItem) => moduleItem.id === moduleId,
+        );
+
+        if (moduleIndex === -1) {
+          return { nextCourse: current };
+        }
+
+        const nextModules = current.modules.filter(
+          (moduleItem) => moduleItem.id !== moduleId,
+        );
+
+        const shouldShiftSelection =
+          normalizedSelection?.type !== "COURSE_EVALUATION" &&
+          normalizedSelection?.moduleId === moduleId;
+
+        if (!shouldShiftSelection) {
+          return {
+            nextCourse: {
+              ...current,
+              modules: nextModules,
+            },
+          };
+        }
+
+        const fallbackModule =
+          nextModules[moduleIndex] ?? nextModules[moduleIndex - 1];
+
+        if (!fallbackModule) {
+          return {
+            nextCourse: {
+              ...current,
+              modules: nextModules,
+            },
+            nextSelection: null,
+          };
+        }
+
+        const fallbackLessonId = fallbackModule.lessons[0]?.id;
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+          nextSelection: fallbackLessonId
+            ? {
+                type: "LESSON",
+                moduleId: fallbackModule.id,
+                lessonId: fallbackLessonId,
+              }
+            : {
+                type: "MODULE",
+                moduleId: fallbackModule.id,
+              },
+        };
+      });
+    },
+    [applyCourseMutation, normalizedSelection],
+  );
+
+  const handleMoveModule = useCallback(
+    (moduleId: string, direction: "up" | "down") => {
+      applyCourseMutation((current) => {
+        const nextCourse = moveModuleInCourse(current, moduleId, direction);
+        if (nextCourse === current) {
+          return { nextCourse: current };
+        }
+
+        return {
+          nextCourse,
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
+  const handleDeleteLesson = useCallback(
+    (moduleId: string, lessonId: string) => {
+      applyCourseMutation((current) => {
+        const targetModule = current.modules.find(
+          (moduleItem) => moduleItem.id === moduleId,
+        );
+
+        if (!targetModule) {
+          return { nextCourse: current };
+        }
+
+        const nextModules = current.modules.map((moduleItem) => {
+          if (moduleItem.id !== moduleId) {
+            return moduleItem;
+          }
+
+          return {
+            ...moduleItem,
+            lessons: moduleItem.lessons.filter(
+              (lessonItem) => lessonItem.id !== lessonId,
+            ),
+          };
+        });
+
+        const wasSelected =
+          (normalizedSelection?.type === "LESSON" ||
+            normalizedSelection?.type === "BLOCK") &&
+          normalizedSelection.lessonId === lessonId;
+
+        if (!wasSelected) {
+          return {
+            nextCourse: {
+              ...current,
+              modules: nextModules,
+            },
+          };
+        }
+
+        const lessonIndex =
+          targetModule?.lessons.findIndex((l) => l.id === lessonId) ?? -1;
+        const remainingLessons =
+          targetModule?.lessons.filter((l) => l.id !== lessonId) ?? [];
+        const fallbackLesson =
+          remainingLessons[lessonIndex] ?? remainingLessons[lessonIndex - 1];
+
+        return {
+          nextCourse: {
+            ...current,
+            modules: nextModules,
+          },
+          nextSelection: fallbackLesson
+            ? {
+                type: "LESSON" as const,
+                moduleId,
+                lessonId: fallbackLesson.id,
+              }
+            : {
+                type: "MODULE" as const,
+                moduleId,
+              },
+        };
+      });
+    },
+    [applyCourseMutation, normalizedSelection],
+  );
+
   const requestModuleCreation = useCallback(() => {
-    const userInput = window.prompt("Name your new module", "New Module");
-
-    if (userInput === null) {
-      return;
-    }
-
-    handleAddModule(userInput);
-  }, [handleAddModule]);
+    setIsModulePromptOpen(true);
+  }, []);
 
   const requestModuleEvaluationCreation = useCallback(() => {
-    const fallbackModuleId = workingCourse.modules[0]?.id;
-    const moduleId = selectedModuleId ?? fallbackModuleId;
-
-    if (!moduleId) {
+    if (!selectedModuleId || !selectedModule || selectedModule.evaluation) {
       return;
     }
+
+    const moduleId = selectedModuleId;
 
     applyCourseMutation((current) => {
       const nextModules = current.modules.map((moduleItem) => {
@@ -555,7 +723,7 @@ export default function Workspace({
         },
       };
     });
-  }, [applyCourseMutation, selectedModuleId, workingCourse.modules]);
+  }, [applyCourseMutation, selectedModule, selectedModuleId]);
 
   const handleUpdateModuleEvaluation = useCallback(
     (moduleId: string, evaluation: ModuleEvaluation) => {
@@ -667,9 +835,14 @@ export default function Workspace({
 
       applyCourseMutation((current) => {
         const nextLessonId = createEntityId("lesson");
+        const targetModule = current.modules.find(
+          (moduleItem) => moduleItem.id === moduleId,
+        );
+        const mostRecentLesson = targetModule?.lessons.at(-1);
+        const inheritedTitle = mostRecentLesson?.title?.trim();
         const nextLesson = {
           id: nextLessonId,
-          title: "New Lesson",
+          title: inheritedTitle || "New Lesson",
           duration: "10 min",
           objective: "",
           blocks: [],
@@ -700,6 +873,27 @@ export default function Workspace({
       });
     },
     [applyCourseMutation, selectedModuleId, workingCourse.modules],
+  );
+
+  const handleMoveLesson = useCallback(
+    (moduleId: string, lessonId: string, direction: "up" | "down") => {
+      applyCourseMutation((current) => {
+        const nextCourse = moveLessonInModule(
+          current,
+          moduleId,
+          lessonId,
+          direction,
+        );
+        if (nextCourse === current) {
+          return { nextCourse: current };
+        }
+
+        return {
+          nextCourse,
+        };
+      });
+    },
+    [applyCourseMutation],
   );
 
   const addBlockToLesson = useCallback(
@@ -746,34 +940,13 @@ export default function Workspace({
 
   const handleAddBlock = useCallback(
     (blockType: StoryboardBlockType) => {
-      const moduleId = selectedModuleId ?? workingCourse.modules[0]?.id;
-
-      if (!moduleId) {
+      if (!selectedModuleId || !selectedLessonId) {
         return;
       }
 
-      const moduleItem = workingCourse.modules.find(
-        (candidate) => candidate.id === moduleId,
-      );
-
-      if (!moduleItem) {
-        return;
-      }
-
-      const lessonId = selectedLessonId ?? moduleItem.lessons[0]?.id;
-
-      if (!lessonId) {
-        return;
-      }
-
-      addBlockToLesson(moduleId, lessonId, blockType);
+      addBlockToLesson(selectedModuleId, selectedLessonId, blockType);
     },
-    [
-      addBlockToLesson,
-      selectedLessonId,
-      selectedModuleId,
-      workingCourse.modules,
-    ],
+    [addBlockToLesson, selectedLessonId, selectedModuleId],
   );
 
   const handleDeleteBlocks = useCallback(
@@ -824,8 +997,39 @@ export default function Workspace({
     [applyCourseMutation],
   );
 
+  const handleMoveBlock = useCallback(
+    (
+      moduleId: string,
+      lessonId: string,
+      blockId: string,
+      direction: "up" | "down",
+    ) => {
+      applyCourseMutation((current) => {
+        const nextCourse = moveBlockInLesson(
+          current,
+          moduleId,
+          lessonId,
+          blockId,
+          direction,
+        );
+        if (nextCourse === current) {
+          return { nextCourse: current };
+        }
+
+        return {
+          nextCourse,
+        };
+      });
+    },
+    [applyCourseMutation],
+  );
+
   const handleCourseStatusChange = useCallback(
     (nextStatus: ApiCoursePayload["status"]) => {
+      if (readOnly) {
+        return;
+      }
+
       applyCourseMutation((current) => ({
         nextCourse: {
           ...current,
@@ -833,7 +1037,156 @@ export default function Workspace({
         },
       }));
     },
+    [applyCourseMutation, readOnly],
+  );
+
+  const triggerWelcomeImagePicker = useCallback(
+    (replaceImageId?: string) => {
+      if (readOnly || isWelcomeImageUploading) {
+        return;
+      }
+
+      setPendingReplaceImageId(replaceImageId ?? null);
+      setWelcomeImageError(null);
+      welcomeImageInputRef.current?.click();
+    },
+    [isWelcomeImageUploading, readOnly],
+  );
+
+  const handleWelcomeImageInputChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      if (file.size > MAX_WELCOME_IMAGE_SIZE_BYTES) {
+        setWelcomeImageError("Image must be 2MB or smaller.");
+        event.target.value = "";
+        return;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        setWelcomeImageError(
+          "Only image files can be added to welcome screen.",
+        );
+        event.target.value = "";
+        return;
+      }
+
+      setWelcomeImageError(null);
+      setIsWelcomeImageUploading(true);
+
+      const replaceImageId = pendingReplaceImageId;
+      const formData = new FormData();
+      formData.set("file", file);
+
+      const result = await uploadToS3(formData);
+
+      if ("error" in result) {
+        setWelcomeImageError(result.error);
+        setIsWelcomeImageUploading(false);
+        setPendingReplaceImageId(null);
+        event.target.value = "";
+        return;
+      }
+
+      applyCourseMutation((current) => {
+        const currentWelcomeImages = current.welcomeImages ?? [];
+
+        let nextWelcomeImages: WelcomeScreenImage[];
+
+        if (replaceImageId) {
+          nextWelcomeImages = currentWelcomeImages.map((imageItem) => {
+            if (imageItem.id !== replaceImageId) {
+              return imageItem;
+            }
+
+            return {
+              ...imageItem,
+              url: result.url,
+            };
+          });
+        } else {
+          nextWelcomeImages = [
+            ...currentWelcomeImages,
+            {
+              id: createEntityId("welcome_image"),
+              url: result.url,
+              altText: "",
+            },
+          ];
+        }
+
+        return {
+          nextCourse: {
+            ...current,
+            welcomeImages: nextWelcomeImages,
+          },
+        };
+      });
+
+      setIsWelcomeImageUploading(false);
+      setPendingReplaceImageId(null);
+      event.target.value = "";
+    },
+    [applyCourseMutation, pendingReplaceImageId],
+  );
+
+  const handleWelcomeImageAltTextChange = useCallback(
+    (imageId: string, altText: string) => {
+      applyCourseMutation((current) => {
+        const currentWelcomeImages = current.welcomeImages ?? [];
+
+        return {
+          nextCourse: {
+            ...current,
+            welcomeImages: currentWelcomeImages.map((imageItem) => {
+              if (imageItem.id !== imageId) {
+                return imageItem;
+              }
+
+              return {
+                ...imageItem,
+                altText,
+              };
+            }),
+          },
+        };
+      });
+    },
     [applyCourseMutation],
+  );
+
+  const handleDeleteWelcomeImage = useCallback(
+    (imageId: string) => {
+      if (readOnly) {
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Remove this image from the welcome screen?",
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      applyCourseMutation((current) => {
+        const currentWelcomeImages = current.welcomeImages ?? [];
+
+        return {
+          nextCourse: {
+            ...current,
+            welcomeImages: currentWelcomeImages.filter(
+              (imageItem) => imageItem.id !== imageId,
+            ),
+          },
+        };
+      });
+    },
+    [applyCourseMutation, readOnly],
   );
 
   if (!builderResult.ok || !renderModel) {
@@ -859,11 +1212,27 @@ export default function Workspace({
     (count, moduleItem) => count + moduleItem.lessons.length,
     0,
   );
+  const canAddBlock = Boolean(selectedModule && selectedLesson);
+  const canAddModuleEvaluation = Boolean(
+    selectedModule && !selectedModule.evaluation,
+  );
+  const canAddCourseEvaluation = !workingCourse.courseEvaluation;
 
   return (
     <div className="min-h-screen bg-background p-6 xl:h-screen xl:overflow-hidden">
       <div className="mx-auto flex h-full max-w-7xl flex-col">
         <header className="mb-6 shrink-0 rounded-4xl border border-border/70 bg-surface/80 p-6 shadow-sm backdrop-blur">
+          <input
+            ref={welcomeImageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={readOnly || isWelcomeImageUploading}
+            onChange={(event) => {
+              void handleWelcomeImageInputChange(event);
+            }}
+          />
+
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700">
@@ -881,6 +1250,7 @@ export default function Workspace({
                 Status
                 <select
                   value={workingCourse.status}
+                  disabled={readOnly}
                   onChange={(event) => {
                     const nextStatus = event.target
                       .value as ApiCoursePayload["status"];
@@ -893,7 +1263,7 @@ export default function Workspace({
                       handleCourseStatusChange(nextStatus);
                     }
                   }}
-                  className="rounded-md border border-border bg-surface px-2 py-1 text-xs font-semibold text-foreground outline-none ring-primary focus:ring-1"
+                  className="rounded-md border border-border bg-surface px-2 py-1 text-xs font-semibold text-foreground outline-none ring-primary focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60"
                   aria-label="Course status"
                 >
                   {COURSE_STATUS_OPTIONS.map((status) => (
@@ -915,6 +1285,115 @@ export default function Workspace({
               </span>
             </div>
           </div>
+
+          <div className="mt-5 border-t border-border/80 pt-5">
+            <div className="rounded-2xl border border-border bg-muted/70 p-3 text-xs text-muted-foreground">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    Welcome Screen Images
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIsWelcomeImagesPanelOpen((current) => !current)
+                    }
+                    className="rounded-lg border border-border bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-muted xl:hidden"
+                    aria-expanded={isWelcomeImagesPanelOpen}
+                    aria-label="Toggle welcome screen images panel"
+                  >
+                    {isWelcomeImagesPanelOpen ? "Hide" : "Show"}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => triggerWelcomeImagePicker()}
+                  disabled={readOnly || isWelcomeImageUploading}
+                  className="rounded-lg border border-border bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Add Image
+                </button>
+              </div>
+
+              <div
+                className={`${isWelcomeImagesPanelOpen ? "mt-2 block" : "hidden"} xl:mt-2 xl:block`}
+              >
+                {isWelcomeImageUploading ? (
+                  <p className="mt-2 text-sky-700">Uploading image...</p>
+                ) : null}
+
+                {welcomeImageError ? (
+                  <p className="mt-2 text-danger">{welcomeImageError}</p>
+                ) : null}
+
+                {workingCourse.welcomeImages &&
+                workingCourse.welcomeImages.length > 0 ? (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {workingCourse.welcomeImages.map((imageItem) => (
+                      <div
+                        key={imageItem.id}
+                        className="rounded-xl border border-border bg-surface p-2"
+                      >
+                        <Image
+                          src={imageItem.url}
+                          alt={imageItem.altText?.trim() || "Welcome image"}
+                          width={1200}
+                          height={800}
+                          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                          className="h-28 w-full rounded-lg object-cover"
+                        />
+
+                        <label className="mt-2 block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Alt text
+                        </label>
+                        <input
+                          type="text"
+                          value={imageItem.altText ?? ""}
+                          disabled={readOnly}
+                          placeholder="Describe this image"
+                          onChange={(event) => {
+                            handleWelcomeImageAltTextChange(
+                              imageItem.id,
+                              event.target.value,
+                            );
+                          }}
+                          className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+                        />
+
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              triggerWelcomeImagePicker(imageItem.id)
+                            }
+                            disabled={readOnly || isWelcomeImageUploading}
+                            className="flex-1 rounded-md border border-border bg-muted px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-muted/80 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Replace
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDeleteWelcomeImage(imageItem.id)
+                            }
+                            disabled={readOnly || isWelcomeImageUploading}
+                            className="flex-1 rounded-md border border-danger/40 bg-danger/10 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2">
+                    No welcome images yet. Add one or more images to customize
+                    the learner intro screen.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         </header>
 
         <div className="grid flex-1 gap-6 overflow-hidden xl:min-h-0 xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -923,7 +1402,9 @@ export default function Workspace({
               <div ref={courseEvaluationRef}>
                 <CourseEvaluationCanvas
                   evaluation={workingCourse.courseEvaluation}
+                  courseRecordId={courseRecordId}
                   isSelected={isCourseEvaluationSelected}
+                  readOnly={readOnly}
                   onSelect={selectCourseEvaluation}
                   onUpdate={handleUpdateCourseEvaluation}
                   onDelete={handleDeleteCourseEvaluation}
@@ -931,20 +1412,28 @@ export default function Workspace({
               </div>
             ) : null}
 
-            {renderModel.modules.map((moduleItem) => (
+            {renderModel.modules.map((moduleItem, moduleIndex) => (
               <ModuleSection
                 key={moduleItem.id}
                 moduleItem={moduleItem}
+                moduleIndex={moduleIndex}
+                moduleCount={renderModel.modules.length}
+                readOnly={readOnly}
                 selectedModuleId={selectedModuleId}
                 selectedLessonId={selectedLessonId}
                 selectedBlockId={selectedBlockId}
+                onDeleteModule={handleDeleteModule}
                 onSelectModule={selectModule}
                 onSelectLesson={selectLesson}
                 onSelectBlock={selectBlock}
                 onModuleTitleChange={handleModuleTitleChange}
+                onMoveModule={handleMoveModule}
                 onLessonAttributesChange={handleLessonAttributesChange}
+                onMoveLesson={handleMoveLesson}
                 onAddLesson={handleAddLesson}
+                onDeleteLesson={handleDeleteLesson}
                 onAddBlock={addBlockToLesson}
+                onMoveBlock={handleMoveBlock}
                 onDeleteBlocks={handleDeleteBlocks}
                 onUpdateModuleEvaluation={handleUpdateModuleEvaluation}
                 onDeleteModuleEvaluation={handleDeleteModuleEvaluation}
@@ -962,6 +1451,10 @@ export default function Workspace({
                 onAddBlock={handleAddBlock}
                 onAddModuleEvaluation={requestModuleEvaluationCreation}
                 onAddCourseEvaluation={requestCourseEvaluationCreation}
+                readOnly={readOnly}
+                canAddBlock={canAddBlock}
+                canAddModuleEvaluation={canAddModuleEvaluation}
+                canAddCourseEvaluation={canAddCourseEvaluation}
               />
             </div>
 
@@ -999,10 +1492,16 @@ export default function Workspace({
                 <p className="font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Save Status
                 </p>
+                {readOnly ? (
+                  <p className="mt-2 text-sky-700">
+                    View-only mode. You can inspect this storyboard but not edit
+                    it.
+                  </p>
+                ) : null}
                 {saveState.status === "saving" ? (
                   <p className="mt-2 text-sky-700">Saving changes...</p>
                 ) : null}
-                {saveState.status === "idle" ? (
+                {saveState.status === "idle" && !readOnly ? (
                   <p className="mt-2 text-emerald-700">All changes saved.</p>
                 ) : null}
                 {saveState.status === "error" ? (
@@ -1017,12 +1516,15 @@ export default function Workspace({
               </p>
               <BlockDetailRenderer
                 block={selectedBlock}
-                onUpdateBlock={handleUpdateBlock}
+                onUpdateBlock={readOnly ? undefined : handleUpdateBlock}
                 moduleId={selectedModuleId}
                 lessonId={selectedLessonId}
               />
 
-              {selectedBlock && selectedModuleId && selectedLessonId ? (
+              {selectedBlock &&
+              selectedModuleId &&
+              selectedLessonId &&
+              !readOnly ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -1039,6 +1541,19 @@ export default function Workspace({
           </aside>
         </div>
       </div>
+
+      {isModulePromptOpen ? (
+        <PromptDialog
+          label="Module name"
+          defaultValue="New Module"
+          confirmLabel="Create"
+          onConfirm={(value) => {
+            setIsModulePromptOpen(false);
+            handleAddModule(value);
+          }}
+          onCancel={() => setIsModulePromptOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type {
   CourseEvaluation,
   ModuleEvaluation,
+  WelcomeScreenImage,
 } from "@/shared/types/storyboard";
 import {
   CourseStatus,
@@ -26,6 +27,7 @@ type PersistedCourseMeta = {
   synopsis: string;
   audience: string;
   estimatedDuration: string;
+  welcomeImages?: WelcomeScreenImage[];
   courseEvaluation?: CourseEvaluation;
 };
 

@@ -8,11 +8,12 @@ import type { ModuleEvaluationCanvasProps } from "./definitions";
 export default function ModuleEvaluationCanvas({
   evaluation,
   moduleId,
+  readOnly = false,
   onUpdate,
   onDelete,
 }: ModuleEvaluationCanvasProps) {
   const [isWizardOpen, setIsWizardOpen] = useState(
-    evaluation.questions.length === 0,
+    !readOnly && evaluation.questions.length === 0,
   );
 
   function handleWizardSave(quiz: StoryboardQuiz) {
@@ -42,22 +43,24 @@ export default function ModuleEvaluationCanvas({
               Module Evaluation
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsWizardOpen(true)}
-              className="rounded px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-400/60 hover:bg-amber-100 dark:text-amber-400 dark:ring-amber-500/40 dark:hover:bg-amber-900/30"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(moduleId)}
-              className="rounded px-2 py-1 text-xs font-medium text-red-600 ring-1 ring-red-300/60 hover:bg-red-50 dark:text-red-400 dark:ring-red-500/40 dark:hover:bg-red-900/20"
-            >
-              Delete
-            </button>
-          </div>
+          {!readOnly ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsWizardOpen(true)}
+                className="rounded px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-400/60 hover:bg-amber-100 dark:text-amber-400 dark:ring-amber-500/40 dark:hover:bg-amber-900/30"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete(moduleId)}
+                className="rounded px-2 py-1 text-xs font-medium text-red-600 ring-1 ring-red-300/60 hover:bg-red-50 dark:text-red-400 dark:ring-red-500/40 dark:hover:bg-red-900/20"
+              >
+                Delete
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <p className="text-sm font-medium text-foreground">
@@ -72,7 +75,7 @@ export default function ModuleEvaluationCanvas({
         </div>
       </div>
 
-      {isWizardOpen && (
+      {!readOnly && isWizardOpen && (
         <QuizWizard
           initialQuiz={initialQuiz}
           onClose={handleWizardClose}
