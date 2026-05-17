@@ -62,11 +62,14 @@ Allow admins to attach a hero image to the learner-facing welcome screen (`Welco
 
 Add optional metadata field in storyboard payload:
 
-- `metadata.welcomeImageUrl?: string`
+- `metadata.welcomeImages?: WelcomeScreenImage[]`
 
-Optional follow-up (V2.1 accessibility):
+Where each `WelcomeScreenImage` includes:
 
-- `metadata.welcomeImageAlt?: string`
+- `url: string`
+- `alt?: string`
+
+For V2, the admin UI can continue to manage a single hero image while storing it in the array-based contract used by the implementation.
 
 ### Admin UI flow
 
