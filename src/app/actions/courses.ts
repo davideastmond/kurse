@@ -85,6 +85,15 @@ function getHourlyBucket() {
   return new Date().toISOString().slice(0, 13);
 }
 
+function getSecondsUntilNextHourlyBucket() {
+  const now = new Date();
+  const nextHour = new Date(now);
+  nextHour.setUTCMinutes(0, 0, 0);
+  nextHour.setUTCHours(nextHour.getUTCHours() + 1);
+
+  return Math.max(1, Math.ceil((nextHour.getTime() - now.getTime()) / 1000));
+}
+
 function formatRetryMessage(retryAfterSeconds: number) {
   if (retryAfterSeconds <= 1) {
     return "Please wait a second and try again.";
