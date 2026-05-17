@@ -1402,6 +1402,7 @@ export default function Workspace({
               <div ref={courseEvaluationRef}>
                 <CourseEvaluationCanvas
                   evaluation={workingCourse.courseEvaluation}
+                  courseRecordId={courseRecordId}
                   isSelected={isCourseEvaluationSelected}
                   readOnly={readOnly}
                   onSelect={selectCourseEvaluation}
