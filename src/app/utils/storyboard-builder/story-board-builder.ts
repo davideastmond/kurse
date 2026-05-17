@@ -35,7 +35,7 @@ function isValidRichtextFontSize(value: unknown): value is number {
   );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isNonNullObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object";
 }
 
@@ -119,7 +119,7 @@ function validatePayload(
       payload.welcomeImages.forEach((image, imageIndex) => {
         const imagePath = `course.welcomeImages[${imageIndex}]`;
 
-        if (!isRecord(image)) {
+        if (!isNonNullObject(image)) {
           pushInvalidField(imagePath, "welcome image must be an object.");
           return;
         }
