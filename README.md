@@ -36,6 +36,13 @@ npm run verify-course-trigger
 
 Verifies the insert trigger sets `courses.structure.courseId` to the database-generated `courses.id`.
 
+## AI Quiz Generation Rate Limits
+
+AI quiz generation is rate-limited server-side per user:
+
+- Cooldown: 20 seconds between requests.
+- Hourly cap: 30 requests per user across all courses.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
