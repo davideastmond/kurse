@@ -1,12 +1,14 @@
 "use client";
 
+import { generateCourseEvaluationQuiz } from "@/app/actions/courses";
 import QuizWizard from "@/components/storyboard/quiz-wizard/Quiz-wizard";
 import type { StoryboardQuiz } from "@/shared/types/storyboard";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { CourseEvaluationCanvasProps } from "./definitions";
 
 export default function CourseEvaluationCanvas({
   evaluation,
+  courseRecordId,
   isSelected,
   readOnly = false,
   onSelect,
@@ -30,11 +32,28 @@ export default function CourseEvaluationCanvas({
     setIsWizardOpen(false);
   }
 
+  const handleGenerateWithAi = useCallback(
+    async (numberOfQuestions: number) => {
+      const result = await generateCourseEvaluationQuiz({
+        courseId: courseRecordId,
+        numberOfQuestions,
+      });
+
+      if (!result.ok) {
+        throw new Error(result.message);
+      }
+
+      return result.quiz;
+    },
+    [courseRecordId],
+  );
+
   const initialQuiz: StoryboardQuiz = {
     title: evaluation.title,
     questions: evaluation.questions,
   };
 
+  // TODO: color contrast needs to be improved
   return (
     <>
       <div
@@ -94,6 +113,8 @@ export default function CourseEvaluationCanvas({
           initialQuiz={initialQuiz}
           onClose={handleWizardClose}
           onSave={handleWizardSave}
+          onGenerateWithAi={handleGenerateWithAi}
+          defaultAiQuestionCount={5}
         />
       ) : null}
     </>
