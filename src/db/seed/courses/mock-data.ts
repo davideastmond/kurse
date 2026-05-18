@@ -88,6 +88,17 @@ export const mockCourses: SeedCourse[] = [
                   "Build a one-page brief to align design, data, and engineering.",
                 duration: "6m",
               },
+              {
+                id: "blk-pm-02-04",
+                type: "link",
+                title: "PMF Opportunity Brief Template",
+                detail:
+                  "Open and duplicate the template before the module checkpoint.",
+                duration: "2m",
+                linkUrl: "https://example.com/templates/opportunity-brief",
+                linkLabel: "Open Template",
+                openInNewTab: true,
+              },
             ],
           },
         ],
