@@ -106,6 +106,8 @@ export default function Workspace({
   );
   const [isWelcomeImagesPanelOpen, setIsWelcomeImagesPanelOpen] =
     useState(false);
+  const [isEditingCourseTitle, setIsEditingCourseTitle] = useState(false);
+  const [isEditingCourseSynopsis, setIsEditingCourseSynopsis] = useState(false);
   const [pendingReplaceImageId, setPendingReplaceImageId] = useState<
     string | null
   >(null);
@@ -113,6 +115,8 @@ export default function Workspace({
   const workingCourseRef = useRef<ApiCoursePayload>(initialCourse);
   const courseEvaluationRef = useRef<HTMLDivElement | null>(null);
   const welcomeImageInputRef = useRef<HTMLInputElement | null>(null);
+  const courseTitleInputRef = useRef<HTMLInputElement | null>(null);
+  const courseSynopsisTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const latestSavedVersionRef = useRef<number>(initialCourse.version);
   const pendingSaveRef = useRef<ApiCoursePayload | null>(null);
   const isSavingRef = useRef(false);
@@ -309,6 +313,23 @@ export default function Workspace({
       block: "start",
     });
   }, [isCourseEvaluationSelected]);
+
+  useEffect(() => {
+    if (!isEditingCourseTitle) {
+      return;
+    }
+
+    courseTitleInputRef.current?.focus();
+    courseTitleInputRef.current?.select();
+  }, [isEditingCourseTitle]);
+
+  useEffect(() => {
+    if (!isEditingCourseSynopsis) {
+      return;
+    }
+
+    courseSynopsisTextareaRef.current?.focus();
+  }, [isEditingCourseSynopsis]);
 
   const selectedModule = useMemo(() => {
     if (!selectedModuleId || !renderModel) {
@@ -1040,6 +1061,38 @@ export default function Workspace({
     [applyCourseMutation, readOnly],
   );
 
+  const handleCourseTitleChange = useCallback(
+    (nextTitle: string) => {
+      if (readOnly) {
+        return;
+      }
+
+      applyCourseMutation((current) => ({
+        nextCourse: {
+          ...current,
+          title: nextTitle,
+        },
+      }));
+    },
+    [applyCourseMutation, readOnly],
+  );
+
+  const handleCourseSynopsisChange = useCallback(
+    (nextSynopsis: string) => {
+      if (readOnly) {
+        return;
+      }
+
+      applyCourseMutation((current) => ({
+        nextCourse: {
+          ...current,
+          synopsis: nextSynopsis,
+        },
+      }));
+    },
+    [applyCourseMutation, readOnly],
+  );
+
   const triggerWelcomeImagePicker = useCallback(
     (replaceImageId?: string) => {
       if (readOnly || isWelcomeImageUploading) {
@@ -1238,12 +1291,92 @@ export default function Workspace({
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700">
                 Storyboard Workspace
               </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">
-                {renderModel.course.title}
-              </h1>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {renderModel.course.synopsis}
-              </p>
+              {readOnly ? (
+                <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">
+                  {renderModel.course.title}
+                </h1>
+              ) : isEditingCourseTitle ? (
+                <div className="mt-3">
+                  <label htmlFor="course-title" className="sr-only">
+                    Course title
+                  </label>
+                  <input
+                    ref={courseTitleInputRef}
+                    id="course-title"
+                    type="text"
+                    value={workingCourse.title}
+                    onChange={(event) => {
+                      handleCourseTitleChange(event.target.value);
+                    }}
+                    onBlur={() => {
+                      setIsEditingCourseTitle(false);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        setIsEditingCourseTitle(false);
+                        return;
+                      }
+
+                      if (event.key === "Escape") {
+                        setIsEditingCourseTitle(false);
+                      }
+                    }}
+                    placeholder="Course title"
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-4xl font-semibold tracking-tight text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              ) : (
+                <h1
+                  onDoubleClick={() => {
+                    setIsEditingCourseTitle(true);
+                  }}
+                  className="mt-3 cursor-text rounded-md px-1 text-4xl font-semibold tracking-tight text-foreground"
+                  title="Double-click to edit title"
+                >
+                  {renderModel.course.title}
+                </h1>
+              )}
+              {readOnly ? (
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {renderModel.course.synopsis}
+                </p>
+              ) : isEditingCourseSynopsis ? (
+                <div className="mt-3">
+                  <label htmlFor="course-synopsis" className="sr-only">
+                    Course synopsis
+                  </label>
+                  <textarea
+                    ref={courseSynopsisTextareaRef}
+                    id="course-synopsis"
+                    value={workingCourse.synopsis}
+                    onChange={(event) => {
+                      handleCourseSynopsisChange(event.target.value);
+                    }}
+                    onBlur={() => {
+                      setIsEditingCourseSynopsis(false);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        setIsEditingCourseSynopsis(false);
+                      }
+                    }}
+                    placeholder="Course synopsis"
+                    rows={3}
+                    className="w-full resize-y rounded-xl border border-border bg-surface px-3 py-2 text-sm leading-6 text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              ) : (
+                <p
+                  onDoubleClick={() => {
+                    setIsEditingCourseSynopsis(true);
+                  }}
+                  className="mt-3 cursor-text rounded-md px-1 text-sm leading-6 text-muted-foreground"
+                  title="Double-click to edit synopsis"
+                >
+                  {renderModel.course.synopsis || "No synopsis yet."}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
               <label className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
