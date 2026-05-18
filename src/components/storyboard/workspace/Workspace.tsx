@@ -63,6 +63,7 @@ const DEFAULT_BLOCK_TITLE: Record<StoryboardBlockType, string> = {
   image: "New Image",
   quiz_inline: "New Quiz",
   audio: "New Audio",
+  link: "New Link",
 };
 
 const COURSE_STATUS_OPTIONS = courseStatusEnum.enumValues;
@@ -87,6 +88,9 @@ function createNewBlock(blockType: StoryboardBlockType) {
     detail: "Add details for this block.",
     duration: "5 min",
     fontSizePx: blockType === "richtext" ? 16 : undefined,
+    linkUrl: blockType === "link" ? "https://example.com" : undefined,
+    linkLabel: blockType === "link" ? "Open Link" : undefined,
+    openInNewTab: blockType === "link" ? true : undefined,
   };
 }
 
@@ -1431,7 +1435,7 @@ export default function Workspace({
                     onClick={() =>
                       setIsWelcomeImagesPanelOpen((current) => !current)
                     }
-                    className="rounded-lg border border-border bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-muted xl:hidden"
+                    className="rounded-lg border border-border bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-muted"
                     aria-expanded={isWelcomeImagesPanelOpen}
                     aria-label="Toggle welcome screen images panel"
                   >
@@ -1448,9 +1452,7 @@ export default function Workspace({
                 </button>
               </div>
 
-              <div
-                className={`${isWelcomeImagesPanelOpen ? "mt-2 block" : "hidden"} xl:mt-2 xl:block`}
-              >
+              <div className={isWelcomeImagesPanelOpen ? "mt-2" : "hidden"}>
                 {isWelcomeImageUploading ? (
                   <p className="mt-2 text-sky-700">Uploading image...</p>
                 ) : null}
