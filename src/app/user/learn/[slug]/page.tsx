@@ -72,6 +72,11 @@ export default async function LearningStagePage({
 
   const { slug } = await params;
   const course = (await fetchCourseBySlug(slug)) as CourseRecord;
+
+  if (course.status !== "PUBLISHED") {
+    notFound();
+  }
+
   const coursePayload = toApiCoursePayload(course);
 
   const db = getDb();

@@ -59,6 +59,7 @@ export default async function UserDashboardPage({
   const filters = [
     eq(enrollments.userId, session.user.id),
     isNull(enrollments.completedAt),
+    eq(courses.status, "PUBLISHED"),
   ];
 
   if (query.length > 0) {
