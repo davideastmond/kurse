@@ -1483,6 +1483,7 @@ export default function Workspace({
                           height={800}
                           sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                           className="h-28 w-full rounded-lg object-cover"
+                          loading="eager"
                         />
 
                         <label className="mt-2 block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
