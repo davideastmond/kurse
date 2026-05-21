@@ -4,6 +4,7 @@ import { saveCourseStoryboard } from "@/app/actions/courses";
 import { uploadToS3 } from "@/app/actions/s3-uploader";
 import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
 import { StoryboardBuilder } from "@/app/utils/storyboard-builder/story-board-builder";
+import ConfirmDialog from "@/components/dialogs/Confirm-dialog";
 import PromptDialog from "@/components/dialogs/Prompt-dialog";
 import BlockDetailRenderer from "@/components/storyboard/blocks/Block-detail-renderer";
 import CourseEvaluationCanvas from "@/components/storyboard/course-evaluation/Course-evaluation-canvas";
@@ -113,6 +114,9 @@ export default function Workspace({
   const [isEditingCourseTitle, setIsEditingCourseTitle] = useState(false);
   const [isEditingCourseSynopsis, setIsEditingCourseSynopsis] = useState(false);
   const [pendingReplaceImageId, setPendingReplaceImageId] = useState<
+    string | null
+  >(null);
+  const [pendingDeleteImageId, setPendingDeleteImageId] = useState<
     string | null
   >(null);
 
@@ -1222,29 +1226,32 @@ export default function Workspace({
         return;
       }
 
-      const confirmed = window.confirm(
-        "Remove this image from the welcome screen?",
-      );
-
-      if (!confirmed) {
-        return;
-      }
-
-      applyCourseMutation((current) => {
-        const currentWelcomeImages = current.welcomeImages ?? [];
-
-        return {
-          nextCourse: {
-            ...current,
-            welcomeImages: currentWelcomeImages.filter(
-              (imageItem) => imageItem.id !== imageId,
-            ),
-          },
-        };
-      });
+      setPendingDeleteImageId(imageId);
     },
-    [applyCourseMutation, readOnly],
+    [readOnly],
   );
+
+  const handleConfirmDeleteWelcomeImage = useCallback(() => {
+    if (!pendingDeleteImageId) {
+      return;
+    }
+
+    const imageId = pendingDeleteImageId;
+    setPendingDeleteImageId(null);
+
+    applyCourseMutation((current) => {
+      const currentWelcomeImages = current.welcomeImages ?? [];
+
+      return {
+        nextCourse: {
+          ...current,
+          welcomeImages: currentWelcomeImages.filter(
+            (imageItem) => imageItem.id !== imageId,
+          ),
+        },
+      };
+    });
+  }, [applyCourseMutation, pendingDeleteImageId]);
 
   if (!builderResult.ok || !renderModel) {
     return (
@@ -1687,6 +1694,15 @@ export default function Workspace({
             handleAddModule(value);
           }}
           onCancel={() => setIsModulePromptOpen(false)}
+        />
+      ) : null}
+
+      {pendingDeleteImageId ? (
+        <ConfirmDialog
+          message="Remove this image from the welcome screen?"
+          confirmLabel="Remove"
+          onConfirm={handleConfirmDeleteWelcomeImage}
+          onCancel={() => setPendingDeleteImageId(null)}
         />
       ) : null}
     </div>
