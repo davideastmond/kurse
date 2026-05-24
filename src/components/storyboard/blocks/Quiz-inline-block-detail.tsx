@@ -50,6 +50,9 @@ export default function QuizInlineBlockDetail({
             <p className="mt-1 text-muted-foreground">
               Questions: {questionCount}
             </p>
+            <p className="mt-1 text-muted-foreground">
+              Passing grade: {block.quiz?.passingScore ?? 70}%
+            </p>
             <p className="mt-2 text-xs text-muted-foreground">
               Multiple-choice only. Each question has one correct answer.
             </p>

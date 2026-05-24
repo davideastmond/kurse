@@ -25,6 +25,7 @@ export type QuizQuestion = {
 
 export type StoryboardQuiz = {
   title: string;
+  passingScore?: number;
   questions: QuizQuestion[];
 };
 

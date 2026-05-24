@@ -23,6 +23,7 @@ export default function CourseEvaluationCanvas({
     onUpdate({
       ...evaluation,
       title: quiz.title,
+      passingScore: quiz.passingScore ?? evaluation.passingScore,
       questions: quiz.questions,
     });
     setIsWizardOpen(false);
@@ -50,6 +51,7 @@ export default function CourseEvaluationCanvas({
 
   const initialQuiz: StoryboardQuiz = {
     title: evaluation.title,
+    passingScore: evaluation.passingScore,
     questions: evaluation.questions,
   };
 
