@@ -10,7 +10,10 @@ vi.mock("@/components/course-runner/Inline-quiz-runner", () => ({
   default: () => null,
 }));
 
-function createLessonWithLink(openInNewTab: boolean): StoryboardLesson {
+function createLessonWithLink(
+  openInNewTab: boolean,
+  linkUrl = "https://example.com/resource",
+): StoryboardLesson {
   return {
     id: "lesson-1",
     title: "Lesson",
@@ -23,7 +26,7 @@ function createLessonWithLink(openInNewTab: boolean): StoryboardLesson {
         title: "Resource",
         detail: "Use this resource",
         duration: "1m",
-        linkUrl: "https://example.com/resource",
+        linkUrl,
         linkLabel: "Open Resource",
         openInNewTab,
       },
@@ -81,5 +84,26 @@ describe("LessonStage link rendering", () => {
     expect(html).toContain('href="https://example.com/resource"');
     expect(html).not.toContain('target="_blank"');
     expect(html).not.toContain('rel="noopener noreferrer"');
+  });
+
+  it("does not render links with non-http protocols", () => {
+    const lesson = createLessonWithLink(true, "javascript:alert(1)");
+
+    const html = renderToStaticMarkup(
+      <LessonStage
+        module={moduleFixture}
+        lesson={lesson}
+        canGoPrevious={false}
+        canGoNext={true}
+        nextLabel="Next"
+        isSavingProgress={false}
+        onPrevious={() => {}}
+        onNext={() => {}}
+        onInlineQuizGateChange={() => {}}
+      />,
+    );
+
+    expect(html).not.toContain("Open Resource");
+    expect(html).not.toContain('href="javascript:alert(1)"');
   });
 });
