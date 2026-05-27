@@ -135,62 +135,139 @@ export default function EnrollmentManager({
               Selected course
             </label>
             <div className="relative mt-1">
-              <input
-                id="course-picker"
-                value={courseQuery}
-                onChange={(event) => {
-                  setCourseQuery(event.target.value);
-                  setIsCourseListOpen(true);
-                }}
-                onFocus={() => setIsCourseListOpen(true)}
-                onBlur={() => setIsCourseListOpen(false)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    setIsCourseListOpen(false);
-                  }
+              {(() => {
+                const listboxId = "course-picker-listbox";
+                const activeCourseIndex = Math.max(
+                  filteredCourses.findIndex((course) => course.id === selectedCourseId),
+                  0,
+                );
+                const activeCourse =
+                  filteredCourses[activeCourseIndex] ?? filteredCourses[0] ?? null;
+                const activeOptionId = activeCourse
+                  ? `course-picker-option-${activeCourse.id}`
+                  : undefined;
 
-                  if (event.key === "Enter" && filteredCourses.length > 0) {
-                    event.preventDefault();
-                    selectCourse(filteredCourses[0].id);
-                  }
-                }}
-                placeholder="Search courses by title or slug"
-                autoComplete="off"
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none ring-primary focus:ring-1"
-              />
+                return (
+                  <>
+                    <input
+                      id="course-picker"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-expanded={isCourseListOpen}
+                      aria-controls={listboxId}
+                      aria-haspopup="listbox"
+                      aria-activedescendant={isCourseListOpen ? activeOptionId : undefined}
+                      value={courseQuery}
+                      onChange={(event) => {
+                        setCourseQuery(event.target.value);
+                        setIsCourseListOpen(true);
+                      }}
+                      onFocus={() => setIsCourseListOpen(true)}
+                      onBlur={() => setIsCourseListOpen(false)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          setIsCourseListOpen(false);
+                          return;
+                        }
 
-              {isCourseListOpen ? (
-                <div className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg">
-                  {filteredCourses.length > 0 ? (
-                    filteredCourses.map((course) => {
-                      const isSelected = course.id === selectedCourseId;
+                        if (filteredCourses.length === 0) {
+                          return;
+                        }
 
-                      return (
-                        <button
-                          key={course.id}
-                          type="button"
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => selectCourse(course.id)}
-                          className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition hover:bg-muted/60 ${
-                            isSelected ? "bg-muted/80" : ""
-                          }`}
-                        >
-                          <span className="font-medium text-foreground">
-                            {course.title}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {course.slug} · {course.status}
-                          </span>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <p className="px-3 py-4 text-sm text-muted-foreground">
-                      No courses match your search.
-                    </p>
-                  )}
-                </div>
-              ) : null}
+                        const currentIndex = Math.max(
+                          filteredCourses.findIndex(
+                            (course) => course.id === selectedCourseId,
+                          ),
+                          0,
+                        );
+
+                        if (event.key === "ArrowDown") {
+                          event.preventDefault();
+                          setIsCourseListOpen(true);
+                          const nextIndex = Math.min(
+                            currentIndex + 1,
+                            filteredCourses.length - 1,
+                          );
+                          selectCourse(filteredCourses[nextIndex].id);
+                          return;
+                        }
+
+                        if (event.key === "ArrowUp") {
+                          event.preventDefault();
+                          setIsCourseListOpen(true);
+                          const previousIndex = Math.max(currentIndex - 1, 0);
+                          selectCourse(filteredCourses[previousIndex].id);
+                          return;
+                        }
+
+                        if (event.key === "Home") {
+                          event.preventDefault();
+                          setIsCourseListOpen(true);
+                          selectCourse(filteredCourses[0].id);
+                          return;
+                        }
+
+                        if (event.key === "End") {
+                          event.preventDefault();
+                          setIsCourseListOpen(true);
+                          selectCourse(filteredCourses[filteredCourses.length - 1].id);
+                          return;
+                        }
+
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          selectCourse(filteredCourses[currentIndex].id);
+                        }
+                      }}
+                      placeholder="Search courses by title or slug"
+                      autoComplete="off"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none ring-primary focus:ring-1"
+                    />
+
+                    {isCourseListOpen ? (
+                      <div
+                        id={listboxId}
+                        role="listbox"
+                        aria-label="Matching courses"
+                        className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg"
+                      >
+                        {filteredCourses.length > 0 ? (
+                          filteredCourses.map((course) => {
+                            const isSelected = course.id === selectedCourseId;
+                            const isActive = course.id === activeCourse?.id;
+
+                            return (
+                              <button
+                                key={course.id}
+                                id={`course-picker-option-${course.id}`}
+                                role="option"
+                                aria-selected={isSelected}
+                                type="button"
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => selectCourse(course.id)}
+                                className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition hover:bg-muted/60 ${
+                                  isSelected || isActive ? "bg-muted/80" : ""
+                                }`}
+                              >
+                                <span className="font-medium text-foreground">
+                                  {course.title}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {course.slug} · {course.status}
+                                </span>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <p className="px-3 py-4 text-sm text-muted-foreground">
+                            No courses match your search.
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
