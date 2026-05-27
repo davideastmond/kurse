@@ -526,19 +526,24 @@ export default function CourseRunner({
         {currentView.type === "lesson" &&
         selectedLessonRef &&
         selectedModule ? (
-          <LessonStage
-            module={selectedModule}
-            lesson={selectedLessonRef.lesson}
-            canGoPrevious={canGoPreviousLesson}
-            canGoNext={canGoNext}
-            nextLabel={nextLabel}
-            isSavingProgress={isPending}
-            onPrevious={handleLessonPrevious}
-            onNext={handleLessonNext}
-            onInlineQuizGateChange={(blockId, passed) => {
-              setInlineQuizGates((prev) => ({ ...prev, [blockId]: passed }));
-            }}
-          />
+          <div
+            key={selectedLessonRef.lesson.id}
+            className="course-runner-fade-in"
+          >
+            <LessonStage
+              module={selectedModule}
+              lesson={selectedLessonRef.lesson}
+              canGoPrevious={canGoPreviousLesson}
+              canGoNext={canGoNext}
+              nextLabel={nextLabel}
+              isSavingProgress={isPending}
+              onPrevious={handleLessonPrevious}
+              onNext={handleLessonNext}
+              onInlineQuizGateChange={(blockId, passed) => {
+                setInlineQuizGates((prev) => ({ ...prev, [blockId]: passed }));
+              }}
+            />
+          </div>
         ) : null}
 
         {/* Module evaluation view */}
