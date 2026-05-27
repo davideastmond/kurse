@@ -71,9 +71,9 @@ export default async function LearningStagePage({
   }
 
   const { slug } = await params;
-  const course = (await fetchCourseBySlug(slug)) as CourseRecord;
+  const course = (await fetchCourseBySlug(slug)) as CourseRecord | undefined;
 
-  if (course.status !== "PUBLISHED") {
+  if (!course || course.status !== "PUBLISHED") {
     notFound();
   }
 
