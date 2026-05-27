@@ -1338,15 +1338,27 @@ export default function Workspace({
                   />
                 </div>
               ) : (
-                <h1
-                  onDoubleClick={() => {
-                    setIsEditingCourseTitle(true);
-                  }}
-                  className="mt-3 cursor-text rounded-md px-1 text-4xl font-semibold tracking-tight text-foreground"
-                  title="Double-click to edit title"
-                >
-                  {renderModel.course.title}
-                </h1>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <h1
+                    onDoubleClick={() => {
+                      setIsEditingCourseTitle(true);
+                    }}
+                    className="cursor-text rounded-md px-1 text-4xl font-semibold tracking-tight text-foreground"
+                    title="Double-click to edit title"
+                  >
+                    {renderModel.course.title}
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingCourseTitle(true);
+                    }}
+                    className="inline-flex items-center rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    aria-label="Edit course title"
+                  >
+                    Edit title
+                  </button>
+                </div>
               )}
               {readOnly ? (
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
