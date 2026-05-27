@@ -119,9 +119,12 @@ export default function EnrollmentManager({
       <header className="space-y-4 rounded-2xl border border-border bg-surface p-5">
         <div className="flex flex-col gap-3 md:flex-row md:justify-between">
           <div>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-              {selectedCourse ? `${selectedCourse.title}` : "..."}
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Manage Enrollments
             </h1>
+            <h2 className="text-lg font-thin tracking-tight text-foreground">
+              {selectedCourse ? `${selectedCourse.title}` : "..."}
+            </h2>
           </div>
 
           <div className="min-w-72">
