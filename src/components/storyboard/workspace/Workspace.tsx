@@ -1378,15 +1378,20 @@ export default function Workspace({
                   />
                 </div>
               ) : (
-                <p
-                  onDoubleClick={() => {
-                    setIsEditingCourseSynopsis(true);
-                  }}
-                  className="mt-3 cursor-text rounded-md px-1 text-sm leading-6 text-muted-foreground"
-                  title="Double-click to edit synopsis"
-                >
-                  {renderModel.course.synopsis || "No synopsis yet."}
-                </p>
+                <div className="mt-3">
+                  <p className="rounded-md px-1 text-sm leading-6 text-muted-foreground">
+                    {renderModel.course.synopsis || "No synopsis yet."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingCourseSynopsis(true);
+                    }}
+                    className="mt-2 rounded-md px-1 text-sm font-medium text-sky-700 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  >
+                    Edit synopsis
+                  </button>
+                </div>
               )}
             </div>
             <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
