@@ -445,6 +445,15 @@ export async function saveCourseStoryboard(
   }
 
   const nextStructure = toPersistedStructure(input.payload);
+  const nextTitle = input.payload.title.trim();
+
+  if (!nextTitle) {
+    return {
+      ok: false,
+      code: "VALIDATION",
+      message: "Course title is required.",
+    };
+  }
 
   try {
     const [courseOwner] = await db
@@ -464,6 +473,7 @@ export async function saveCourseStoryboard(
     const [updatedCourse] = await db
       .update(courses)
       .set({
+        title: nextTitle,
         structure: nextStructure,
         status: input.payload.status,
         description: input.payload.synopsis,
@@ -495,6 +505,7 @@ export async function saveCourseStoryboard(
       version: updatedCourse.version,
       payload: {
         ...input.payload,
+        title: nextTitle,
         version: updatedCourse.version,
       },
     };

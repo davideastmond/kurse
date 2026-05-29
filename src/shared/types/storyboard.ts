@@ -6,6 +6,7 @@ export const BLOCK_TYPES = [
   "image",
   "quiz_inline",
   "audio",
+  "link",
 ] as const;
 
 export type StoryboardBlockType = (typeof BLOCK_TYPES)[number];
@@ -24,6 +25,7 @@ export type QuizQuestion = {
 
 export type StoryboardQuiz = {
   title: string;
+  passingScore?: number;
   questions: QuizQuestion[];
 };
 
@@ -37,6 +39,9 @@ export type StoryboardBlock = {
   videoUrl?: string;
   imageUrl?: string;
   audioUrl?: string;
+  linkUrl?: string;
+  linkLabel?: string;
+  openInNewTab?: boolean;
   quiz?: StoryboardQuiz;
 };
 

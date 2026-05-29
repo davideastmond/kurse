@@ -4,6 +4,7 @@ import { saveCourseStoryboard } from "@/app/actions/courses";
 import { uploadToS3 } from "@/app/actions/s3-uploader";
 import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
 import { StoryboardBuilder } from "@/app/utils/storyboard-builder/story-board-builder";
+import ConfirmDialog from "@/components/dialogs/Confirm-dialog";
 import PromptDialog from "@/components/dialogs/Prompt-dialog";
 import BlockDetailRenderer from "@/components/storyboard/blocks/Block-detail-renderer";
 import CourseEvaluationCanvas from "@/components/storyboard/course-evaluation/Course-evaluation-canvas";
@@ -63,6 +64,7 @@ const DEFAULT_BLOCK_TITLE: Record<StoryboardBlockType, string> = {
   image: "New Image",
   quiz_inline: "New Quiz",
   audio: "New Audio",
+  link: "New Link",
 };
 
 const COURSE_STATUS_OPTIONS = courseStatusEnum.enumValues;
@@ -87,6 +89,9 @@ function createNewBlock(blockType: StoryboardBlockType) {
     detail: "Add details for this block.",
     duration: "5 min",
     fontSizePx: blockType === "richtext" ? 16 : undefined,
+    linkUrl: blockType === "link" ? "https://example.com" : undefined,
+    linkLabel: blockType === "link" ? "Open Link" : undefined,
+    openInNewTab: blockType === "link" ? true : undefined,
   };
 }
 
@@ -106,13 +111,20 @@ export default function Workspace({
   );
   const [isWelcomeImagesPanelOpen, setIsWelcomeImagesPanelOpen] =
     useState(false);
+  const [isEditingCourseTitle, setIsEditingCourseTitle] = useState(false);
+  const [isEditingCourseSynopsis, setIsEditingCourseSynopsis] = useState(false);
   const [pendingReplaceImageId, setPendingReplaceImageId] = useState<
+    string | null
+  >(null);
+  const [pendingDeleteImageId, setPendingDeleteImageId] = useState<
     string | null
   >(null);
 
   const workingCourseRef = useRef<ApiCoursePayload>(initialCourse);
   const courseEvaluationRef = useRef<HTMLDivElement | null>(null);
   const welcomeImageInputRef = useRef<HTMLInputElement | null>(null);
+  const courseTitleInputRef = useRef<HTMLInputElement | null>(null);
+  const courseSynopsisTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const latestSavedVersionRef = useRef<number>(initialCourse.version);
   const pendingSaveRef = useRef<ApiCoursePayload | null>(null);
   const isSavingRef = useRef(false);
@@ -309,6 +321,23 @@ export default function Workspace({
       block: "start",
     });
   }, [isCourseEvaluationSelected]);
+
+  useEffect(() => {
+    if (!isEditingCourseTitle) {
+      return;
+    }
+
+    courseTitleInputRef.current?.focus();
+    courseTitleInputRef.current?.select();
+  }, [isEditingCourseTitle]);
+
+  useEffect(() => {
+    if (!isEditingCourseSynopsis) {
+      return;
+    }
+
+    courseSynopsisTextareaRef.current?.focus();
+  }, [isEditingCourseSynopsis]);
 
   const selectedModule = useMemo(() => {
     if (!selectedModuleId || !renderModel) {
@@ -1040,6 +1069,38 @@ export default function Workspace({
     [applyCourseMutation, readOnly],
   );
 
+  const handleCourseTitleChange = useCallback(
+    (nextTitle: string) => {
+      if (readOnly) {
+        return;
+      }
+
+      applyCourseMutation((current) => ({
+        nextCourse: {
+          ...current,
+          title: nextTitle,
+        },
+      }));
+    },
+    [applyCourseMutation, readOnly],
+  );
+
+  const handleCourseSynopsisChange = useCallback(
+    (nextSynopsis: string) => {
+      if (readOnly) {
+        return;
+      }
+
+      applyCourseMutation((current) => ({
+        nextCourse: {
+          ...current,
+          synopsis: nextSynopsis,
+        },
+      }));
+    },
+    [applyCourseMutation, readOnly],
+  );
+
   const triggerWelcomeImagePicker = useCallback(
     (replaceImageId?: string) => {
       if (readOnly || isWelcomeImageUploading) {
@@ -1165,29 +1226,32 @@ export default function Workspace({
         return;
       }
 
-      const confirmed = window.confirm(
-        "Remove this image from the welcome screen?",
-      );
-
-      if (!confirmed) {
-        return;
-      }
-
-      applyCourseMutation((current) => {
-        const currentWelcomeImages = current.welcomeImages ?? [];
-
-        return {
-          nextCourse: {
-            ...current,
-            welcomeImages: currentWelcomeImages.filter(
-              (imageItem) => imageItem.id !== imageId,
-            ),
-          },
-        };
-      });
+      setPendingDeleteImageId(imageId);
     },
-    [applyCourseMutation, readOnly],
+    [readOnly],
   );
+
+  const handleConfirmDeleteWelcomeImage = useCallback(() => {
+    if (!pendingDeleteImageId) {
+      return;
+    }
+
+    const imageId = pendingDeleteImageId;
+    setPendingDeleteImageId(null);
+
+    applyCourseMutation((current) => {
+      const currentWelcomeImages = current.welcomeImages ?? [];
+
+      return {
+        nextCourse: {
+          ...current,
+          welcomeImages: currentWelcomeImages.filter(
+            (imageItem) => imageItem.id !== imageId,
+          ),
+        },
+      };
+    });
+  }, [applyCourseMutation, pendingDeleteImageId]);
 
   if (!builderResult.ok || !renderModel) {
     return (
@@ -1238,12 +1302,109 @@ export default function Workspace({
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700">
                 Storyboard Workspace
               </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">
-                {renderModel.course.title}
-              </h1>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {renderModel.course.synopsis}
-              </p>
+              {readOnly ? (
+                <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">
+                  {renderModel.course.title}
+                </h1>
+              ) : isEditingCourseTitle ? (
+                <div className="mt-3">
+                  <label htmlFor="course-title" className="sr-only">
+                    Course title
+                  </label>
+                  <input
+                    ref={courseTitleInputRef}
+                    id="course-title"
+                    type="text"
+                    value={workingCourse.title}
+                    onChange={(event) => {
+                      handleCourseTitleChange(event.target.value);
+                    }}
+                    onBlur={() => {
+                      setIsEditingCourseTitle(false);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        setIsEditingCourseTitle(false);
+                        return;
+                      }
+
+                      if (event.key === "Escape") {
+                        setIsEditingCourseTitle(false);
+                      }
+                    }}
+                    placeholder="Course title"
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-4xl font-semibold tracking-tight text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <h1
+                    onDoubleClick={() => {
+                      setIsEditingCourseTitle(true);
+                    }}
+                    className="cursor-text rounded-md px-1 text-4xl font-semibold tracking-tight text-foreground"
+                    title="Double-click to edit title"
+                  >
+                    {renderModel.course.title}
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingCourseTitle(true);
+                    }}
+                    className="inline-flex items-center rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    aria-label="Edit course title"
+                  >
+                    Edit title
+                  </button>
+                </div>
+              )}
+              {readOnly ? (
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {renderModel.course.synopsis}
+                </p>
+              ) : isEditingCourseSynopsis ? (
+                <div className="mt-3">
+                  <label htmlFor="course-synopsis" className="sr-only">
+                    Course synopsis
+                  </label>
+                  <textarea
+                    ref={courseSynopsisTextareaRef}
+                    id="course-synopsis"
+                    value={workingCourse.synopsis}
+                    onChange={(event) => {
+                      handleCourseSynopsisChange(event.target.value);
+                    }}
+                    onBlur={() => {
+                      setIsEditingCourseSynopsis(false);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        setIsEditingCourseSynopsis(false);
+                      }
+                    }}
+                    placeholder="Course synopsis"
+                    rows={3}
+                    className="w-full resize-y rounded-xl border border-border bg-surface px-3 py-2 text-sm leading-6 text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <p className="rounded-md px-1 text-sm leading-6 text-muted-foreground">
+                    {renderModel.course.synopsis || "No synopsis yet."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingCourseSynopsis(true);
+                    }}
+                    className="mt-2 rounded-md px-1 text-sm font-medium text-sky-700 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  >
+                    Edit synopsis
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
               <label className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -1298,7 +1459,7 @@ export default function Workspace({
                     onClick={() =>
                       setIsWelcomeImagesPanelOpen((current) => !current)
                     }
-                    className="rounded-lg border border-border bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-muted xl:hidden"
+                    className="rounded-lg border border-border bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-muted"
                     aria-expanded={isWelcomeImagesPanelOpen}
                     aria-label="Toggle welcome screen images panel"
                   >
@@ -1315,9 +1476,7 @@ export default function Workspace({
                 </button>
               </div>
 
-              <div
-                className={`${isWelcomeImagesPanelOpen ? "mt-2 block" : "hidden"} xl:mt-2 xl:block`}
-              >
+              <div className={isWelcomeImagesPanelOpen ? "mt-2" : "hidden"}>
                 {isWelcomeImageUploading ? (
                   <p className="mt-2 text-sky-700">Uploading image...</p>
                 ) : null}
@@ -1552,6 +1711,15 @@ export default function Workspace({
             handleAddModule(value);
           }}
           onCancel={() => setIsModulePromptOpen(false)}
+        />
+      ) : null}
+
+      {pendingDeleteImageId ? (
+        <ConfirmDialog
+          message="Remove this image from the welcome screen?"
+          confirmLabel="Remove"
+          onConfirm={handleConfirmDeleteWelcomeImage}
+          onCancel={() => setPendingDeleteImageId(null)}
         />
       ) : null}
     </div>

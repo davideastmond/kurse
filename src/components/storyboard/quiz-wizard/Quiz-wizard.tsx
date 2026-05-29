@@ -37,17 +37,20 @@ function createQuestion(): QuizWizardQuestionDraft {
 
 function normalizeQuiz(initialQuiz?: StoryboardQuiz): {
   title: string;
+  passingScore: number;
   questions: QuizWizardQuestionDraft[];
 } {
   if (!initialQuiz) {
     return {
       title: "",
+      passingScore: 70,
       questions: [createQuestion()],
     };
   }
 
   return {
     title: initialQuiz.title,
+    passingScore: initialQuiz.passingScore ?? 70,
     questions:
       initialQuiz.questions.length > 0
         ? initialQuiz.questions.map((question) => {
@@ -74,9 +77,21 @@ function normalizeQuiz(initialQuiz?: StoryboardQuiz): {
   };
 }
 
-function validateQuiz(quizTitle: string, questions: QuizWizardQuestionDraft[]) {
+function validateQuiz(
+  quizTitle: string,
+  passingScore: number,
+  questions: QuizWizardQuestionDraft[],
+) {
   if (!quizTitle.trim()) {
     return "Quiz name is required.";
+  }
+
+  if (
+    !Number.isFinite(passingScore) ||
+    passingScore < 0 ||
+    passingScore > 100
+  ) {
+    return "Passing grade must be between 0 and 100.";
   }
 
   for (const question of questions) {
@@ -113,7 +128,7 @@ export default function QuizWizard({
   onGenerateWithAi,
   defaultAiQuestionCount = 5,
 }: QuizWizardProps) {
-  const [{ title, questions }, setDraft] = useState(() =>
+  const [{ title, passingScore, questions }, setDraft] = useState(() =>
     normalizeQuiz(initialQuiz),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -199,7 +214,7 @@ export default function QuizWizard({
   );
 
   const handleSave = useCallback(() => {
-    const validationError = validateQuiz(title, questions);
+    const validationError = validateQuiz(title, passingScore, questions);
 
     if (validationError) {
       setErrorMessage(validationError);
@@ -208,6 +223,7 @@ export default function QuizWizard({
 
     const nextQuiz: StoryboardQuiz = {
       title: title.trim(),
+      passingScore,
       questions: questions.map<QuizQuestion>((question) => ({
         id: question.id,
         prompt: question.prompt.trim(),
@@ -220,7 +236,7 @@ export default function QuizWizard({
     };
 
     onSave(nextQuiz);
-  }, [onSave, questions, title]);
+  }, [onSave, passingScore, questions, title]);
 
   const handleGenerateWithAi = useCallback(async () => {
     if (!onGenerateWithAi || isGeneratingWithAi) {
@@ -232,7 +248,13 @@ export default function QuizWizard({
 
     try {
       const generatedQuiz = await onGenerateWithAi(aiQuestionCount);
-      setDraft(normalizeQuiz(generatedQuiz));
+      setDraft((current) => {
+        const normalized = normalizeQuiz(generatedQuiz);
+        return {
+          ...normalized,
+          passingScore: generatedQuiz.passingScore ?? current.passingScore,
+        };
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error && error.message.trim().length > 0
@@ -248,7 +270,9 @@ export default function QuizWizard({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/35 p-4">
       <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-violet-200 bg-surface p-6 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-foreground">Quiz Wizard</h2>
+          <h2 className="text-xl font-semibold text-foreground">
+            Quiz & Evaluation Wizard
+          </h2>
           <button
             onClick={onClose}
             className="rounded-lg border border-border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted"
@@ -273,6 +297,32 @@ export default function QuizWizard({
             className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
             placeholder="Quiz name"
           />
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Passing Grade (%)
+          </label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={passingScore}
+            onChange={(event) => {
+              const parsed = Number.parseInt(event.target.value, 10);
+              setDraft((current) => ({
+                ...current,
+                passingScore: Number.isFinite(parsed)
+                  ? Math.max(0, Math.min(100, parsed))
+                  : 0,
+              }));
+            }}
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            placeholder="70"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Learners need this score or higher to pass.
+          </p>
         </div>
 
         {onGenerateWithAi ? (
