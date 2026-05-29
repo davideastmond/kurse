@@ -58,6 +58,9 @@ type PersistedBlock = {
   videoUrl?: string;
   imageUrl?: string;
   audioUrl?: string;
+  linkUrl?: string;
+  linkLabel?: string;
+  openInNewTab?: boolean;
   quiz?: StoryboardQuiz;
 };
 

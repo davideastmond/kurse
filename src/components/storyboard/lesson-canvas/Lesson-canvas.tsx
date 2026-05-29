@@ -40,6 +40,7 @@ const BLOCK_TYPE_LABELS: Record<LessonCanvasBlock["type"], string> = {
   image: "Image",
   quiz_inline: "Inline Quiz",
   audio: "Audio",
+  link: "Link",
 };
 
 function getBlockCardClasses(isSelected: boolean, isInteractive: boolean) {

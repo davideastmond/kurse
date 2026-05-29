@@ -3,6 +3,7 @@
 import AudioBlockDetail from "@/components/storyboard/blocks/Audio-block-detail";
 import type { BlockDetailRendererProps } from "@/components/storyboard/blocks/definitions";
 import ImageBlockDetail from "@/components/storyboard/blocks/Image-block-detail";
+import LinkBlockDetail from "@/components/storyboard/blocks/Link-block-detail";
 import QuizInlineBlockDetail from "@/components/storyboard/blocks/Quiz-inline-block-detail";
 import RichtextBlockDetail from "@/components/storyboard/blocks/Richtext-block-detail";
 import VideoBlockDetail from "@/components/storyboard/blocks/Video-block-detail";
@@ -57,6 +58,17 @@ export default function BlockDetailRenderer({
   if (block.type === "audio") {
     return (
       <AudioBlockDetail
+        block={block}
+        onUpdateBlock={onUpdateBlock}
+        moduleId={moduleId}
+        lessonId={lessonId}
+      />
+    );
+  }
+
+  if (block.type === "link") {
+    return (
+      <LinkBlockDetail
         block={block}
         onUpdateBlock={onUpdateBlock}
         moduleId={moduleId}

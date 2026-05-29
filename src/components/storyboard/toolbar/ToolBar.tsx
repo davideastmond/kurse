@@ -116,6 +116,16 @@ const toolButtons: ToolButton[] = [
     ),
   },
   {
+    id: "link",
+    label: "Link",
+    ariaLabel: "Add link block",
+    icon: (
+      <SVGIcon>
+        <path d="M3.9 12a5 5 0 0 1 5-5h3v2h-3a3 3 0 1 0 0 6h3v2h-3a5 5 0 0 1-5-5zm7.1 1h2v-2h-2v2zm4.1-6h-3v2h3a3 3 0 1 1 0 6h-3v2h3a5 5 0 1 0 0-10z" />
+      </SVGIcon>
+    ),
+  },
+  {
     id: "quiz_inline",
     label: "Inline Quiz",
     ariaLabel: "Add inline quiz block",

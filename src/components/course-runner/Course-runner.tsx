@@ -467,28 +467,28 @@ export default function CourseRunner({
         </div>
       </div>
 
-      <main className="space-y-4  p-4 sm:p-6">
+      <main className="space-y-4 p-4 sm:p-6">
         {/* Overview / welcome screen */}
         {currentView.type === "overview" ? (
-          <section className="space-y-4  p-6">
+          <section className="mx-auto flex min-h-[calc(100vh-9rem)] w-full max-w-5xl flex-col items-center justify-center gap-4 p-6 text-center sm:min-h-[calc(100vh-12rem)]">
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">
               Welcome to {course.title}
             </h2>
 
             {course.welcomeImages && course.welcomeImages.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="flex w-full max-w-5xl flex-wrap items-center justify-center gap-4">
                 {course.welcomeImages.map((welcomeImage) => (
                   <figure
                     key={welcomeImage.id}
-                    className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+                    className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
                   >
                     <Image
                       src={welcomeImage.url}
                       alt={welcomeImage.altText?.trim() || course.title}
                       width={1400}
                       height={900}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      className="h-56 w-full object-cover"
+                      sizes="(max-width: 640px) 92vw, (max-width: 1024px) 22rem, 20rem"
+                      className="h-52 w-full object-cover object-center sm:h-56"
                     />
                   </figure>
                 ))}
@@ -526,19 +526,24 @@ export default function CourseRunner({
         {currentView.type === "lesson" &&
         selectedLessonRef &&
         selectedModule ? (
-          <LessonStage
-            module={selectedModule}
-            lesson={selectedLessonRef.lesson}
-            canGoPrevious={canGoPreviousLesson}
-            canGoNext={canGoNext}
-            nextLabel={nextLabel}
-            isSavingProgress={isPending}
-            onPrevious={handleLessonPrevious}
-            onNext={handleLessonNext}
-            onInlineQuizGateChange={(blockId, passed) => {
-              setInlineQuizGates((prev) => ({ ...prev, [blockId]: passed }));
-            }}
-          />
+          <div
+            key={selectedLessonRef.lesson.id}
+            className="course-runner-fade-in"
+          >
+            <LessonStage
+              module={selectedModule}
+              lesson={selectedLessonRef.lesson}
+              canGoPrevious={canGoPreviousLesson}
+              canGoNext={canGoNext}
+              nextLabel={nextLabel}
+              isSavingProgress={isPending}
+              onPrevious={handleLessonPrevious}
+              onNext={handleLessonNext}
+              onInlineQuizGateChange={(blockId, passed) => {
+                setInlineQuizGates((prev) => ({ ...prev, [blockId]: passed }));
+              }}
+            />
+          </div>
         ) : null}
 
         {/* Module evaluation view */}

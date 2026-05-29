@@ -35,6 +35,15 @@ function isValidRichtextFontSize(value: unknown): value is number {
   );
 }
 
+function isValidHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function isNonNullObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -333,6 +342,40 @@ function validatePayload(
             "font size must be an integer between 9 and 72.",
           );
         }
+
+        if (blockItem.type === "link") {
+          if (!isNonEmptyString(blockItem.linkUrl)) {
+            pushInvalidField(
+              `${blockPath}.linkUrl`,
+              "link URL is required for link blocks.",
+            );
+          } else if (!isValidHttpUrl(blockItem.linkUrl)) {
+            pushInvalidField(
+              `${blockPath}.linkUrl`,
+              "link URL must be a valid http or https URL.",
+            );
+          }
+
+          if (
+            typeof blockItem.linkLabel !== "undefined" &&
+            typeof blockItem.linkLabel !== "string"
+          ) {
+            pushInvalidField(
+              `${blockPath}.linkLabel`,
+              "link label must be a string when provided.",
+            );
+          }
+
+          if (
+            typeof blockItem.openInNewTab !== "undefined" &&
+            typeof blockItem.openInNewTab !== "boolean"
+          ) {
+            pushInvalidField(
+              `${blockPath}.openInNewTab`,
+              "openInNewTab must be a boolean when provided.",
+            );
+          }
+        }
       });
     });
   });
@@ -403,6 +446,9 @@ function buildStructureFromPayload(
           videoUrl: blockItem.videoUrl,
           imageUrl: blockItem.imageUrl,
           audioUrl: blockItem.audioUrl,
+          linkUrl: blockItem.linkUrl,
+          linkLabel: blockItem.linkLabel,
+          openInNewTab: blockItem.openInNewTab,
           quiz: blockItem.quiz,
         };
       }
@@ -449,6 +495,9 @@ function buildApiPayloadFromStructure(
                     videoUrl: blockEntity.videoUrl,
                     imageUrl: blockEntity.imageUrl,
                     audioUrl: blockEntity.audioUrl,
+                    linkUrl: blockEntity.linkUrl,
+                    linkLabel: blockEntity.linkLabel,
+                    openInNewTab: blockEntity.openInNewTab,
                     quiz: blockEntity.quiz,
                   };
                 },

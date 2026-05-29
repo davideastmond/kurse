@@ -22,6 +22,21 @@ function proxyUrl(rawUrl: string): string {
   return `/api/media-proxy?url=${encodeURIComponent(rawUrl)}`;
 }
 
+function getSafeHttpHref(value: string | undefined): string | null {
+  if (!value) return null;
+
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 type VideoKind =
   | { kind: "youtube"; embedUrl: string }
   | { kind: "vimeo"; embedUrl: string }
@@ -222,6 +237,30 @@ export default function LessonStage({
                   src={proxyUrl(block.audioUrl)}
                 />
               ) : null}
+
+              {block.type === "link"
+                ? (() => {
+                    const href = getSafeHttpHref(block.linkUrl);
+                    if (!href) return null;
+
+                    return (
+                      <a
+                        href={href}
+                        target={
+                          (block.openInNewTab ?? true) ? "_blank" : undefined
+                        }
+                        rel={
+                          (block.openInNewTab ?? true)
+                            ? "noopener noreferrer"
+                            : undefined
+                        }
+                        className="inline-flex items-center rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-800 transition-colors hover:bg-sky-100"
+                      >
+                        {block.linkLabel?.trim() || "Open Link"}
+                      </a>
+                    );
+                  })()
+                : null}
 
               <p
                 className="whitespace-pre-wrap text-foreground"

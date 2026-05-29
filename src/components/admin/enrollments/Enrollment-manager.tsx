@@ -49,6 +49,25 @@ export default function EnrollmentManager({
     [courses, selectedCourseId],
   );
 
+  const [courseQuery, setCourseQuery] = useState(selectedCourse?.title ?? "");
+  const [isCourseListOpen, setIsCourseListOpen] = useState(false);
+
+  const filteredCourses = useMemo(() => {
+    const normalizedQuery = courseQuery.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return courses;
+    }
+
+    return courses.filter((course) => {
+      const searchableText = [course.title, course.slug, course.status]
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(normalizedQuery);
+    });
+  }, [courseQuery, courses]);
+
   const updateCourseFilter = (courseId: string) => {
     const params = new URLSearchParams();
     if (courseId) {
@@ -75,6 +94,13 @@ export default function EnrollmentManager({
     });
   };
 
+  const selectCourse = (courseId: string) => {
+    const course = courses.find((item) => item.id === courseId);
+    setCourseQuery(course?.title ?? "");
+    setIsCourseListOpen(false);
+    updateCourseFilter(courseId);
+  };
+
   if (courses.length === 0) {
     return (
       <section className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
@@ -91,14 +117,14 @@ export default function EnrollmentManager({
   return (
     <section className="space-y-6">
       <header className="space-y-4 rounded-2xl border border-border bg-surface p-5">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Enrollment Manager
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-              Manage Course Enrollments
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Manage Enrollments
             </h1>
+            <h2 className="text-lg font-thin tracking-tight text-foreground">
+              {selectedCourse ? `${selectedCourse.title}` : "..."}
+            </h2>
           </div>
 
           <div className="min-w-72">
@@ -108,18 +134,141 @@ export default function EnrollmentManager({
             >
               Selected course
             </label>
-            <select
-              id="course-picker"
-              value={selectedCourseId ?? ""}
-              onChange={(event) => updateCourseFilter(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none ring-primary focus:ring-1"
-            >
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.title} ({course.status})
-                </option>
-              ))}
-            </select>
+            <div className="relative mt-1">
+              {(() => {
+                const listboxId = "course-picker-listbox";
+                const activeCourseIndex = Math.max(
+                  filteredCourses.findIndex((course) => course.id === selectedCourseId),
+                  0,
+                );
+                const activeCourse =
+                  filteredCourses[activeCourseIndex] ?? filteredCourses[0] ?? null;
+                const activeOptionId = activeCourse
+                  ? `course-picker-option-${activeCourse.id}`
+                  : undefined;
+
+                return (
+                  <>
+                    <input
+                      id="course-picker"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-expanded={isCourseListOpen}
+                      aria-controls={listboxId}
+                      aria-haspopup="listbox"
+                      aria-activedescendant={isCourseListOpen ? activeOptionId : undefined}
+                      value={courseQuery}
+                      onChange={(event) => {
+                        setCourseQuery(event.target.value);
+                        setIsCourseListOpen(true);
+                      }}
+                      onFocus={() => setIsCourseListOpen(true)}
+                      onBlur={() => setIsCourseListOpen(false)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          setIsCourseListOpen(false);
+                          return;
+                        }
+
+                        if (filteredCourses.length === 0) {
+                          return;
+                        }
+
+                        const currentIndex = Math.max(
+                          filteredCourses.findIndex(
+                            (course) => course.id === selectedCourseId,
+                          ),
+                          0,
+                        );
+
+                        if (event.key === "ArrowDown") {
+                          event.preventDefault();
+                          setIsCourseListOpen(true);
+                          const nextIndex = Math.min(
+                            currentIndex + 1,
+                            filteredCourses.length - 1,
+                          );
+                          selectCourse(filteredCourses[nextIndex].id);
+                          return;
+                        }
+
+                        if (event.key === "ArrowUp") {
+                          event.preventDefault();
+                          setIsCourseListOpen(true);
+                          const previousIndex = Math.max(currentIndex - 1, 0);
+                          selectCourse(filteredCourses[previousIndex].id);
+                          return;
+                        }
+
+                        if (event.key === "Home") {
+                          event.preventDefault();
+                          setIsCourseListOpen(true);
+                          selectCourse(filteredCourses[0].id);
+                          return;
+                        }
+
+                        if (event.key === "End") {
+                          event.preventDefault();
+                          setIsCourseListOpen(true);
+                          selectCourse(filteredCourses[filteredCourses.length - 1].id);
+                          return;
+                        }
+
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          selectCourse(filteredCourses[currentIndex].id);
+                        }
+                      }}
+                      placeholder="Search courses by title or slug"
+                      autoComplete="off"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none ring-primary focus:ring-1"
+                    />
+
+                    {isCourseListOpen ? (
+                      <div
+                        id={listboxId}
+                        role="listbox"
+                        aria-label="Matching courses"
+                        className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg"
+                      >
+                        {filteredCourses.length > 0 ? (
+                          filteredCourses.map((course) => {
+                            const isSelected = course.id === selectedCourseId;
+                            const isActive = course.id === activeCourse?.id;
+
+                            return (
+                              <button
+                                key={course.id}
+                                id={`course-picker-option-${course.id}`}
+                                role="option"
+                                aria-selected={isSelected}
+                                type="button"
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => selectCourse(course.id)}
+                                className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-sm transition hover:bg-muted/60 ${
+                                  isSelected || isActive ? "bg-muted/80" : ""
+                                }`}
+                              >
+                                <span className="font-medium text-foreground">
+                                  {course.title}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {course.slug} · {course.status}
+                                </span>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <p className="px-3 py-4 text-sm text-muted-foreground">
+                            No courses match your search.
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                  </>
+                );
+              })()}
+            </div>
           </div>
         </div>
 
