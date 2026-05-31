@@ -1,4 +1,5 @@
 import { auth } from "@/auth/auth";
+import type { Session } from "next-auth";
 import { cookies } from "next/headers";
 
 const SESSION_COOKIE_NAMES = [
@@ -78,4 +79,25 @@ export async function getSessionSafely() {
 
     throw error;
   }
+}
+
+export type SessionOrganizationContext = {
+  organizationId: string;
+  role: "OWNER" | "ADMIN" | "MEMBER";
+};
+
+export function getSessionOrganizationContext(
+  session: Session | null,
+): SessionOrganizationContext | null {
+  const organizationId = session?.user?.currentOrganizationId;
+  const role = session?.user?.currentOrganizationRole;
+
+  if (!organizationId || !role) {
+    return null;
+  }
+
+  return {
+    organizationId,
+    role,
+  };
 }

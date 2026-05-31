@@ -15,6 +15,20 @@
       "when": 1777386037544,
       "tag": "0001_courses_structure_course_id_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780137600000,
+      "tag": "0002_phase0_org_webhook_foundations",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780137900000,
+      "tag": "0003_phase1_membership_state",
+      "breakpoints": true
     }
   ]
 }

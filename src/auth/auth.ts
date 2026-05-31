@@ -1,7 +1,7 @@
 import { verifyPassword } from "@/auth/password";
 import { getDb } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { organizationMemberships, organizations, users } from "@/db/schema";
+import { and, asc, eq } from "drizzle-orm";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
@@ -81,43 +81,148 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return token;
       }
 
-      // Only query the DB on initial sign-in when role/id are not yet in the token.
-      if (token.role && token.id) {
-        return token;
-      }
-
       const db = getDb();
       if (!db) {
         return token;
       }
 
-      const [userInDb] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, token.email))
-        .limit(1);
+      let nextToken = token;
 
-      if (!userInDb) {
-        return token;
+      // Only query role/id once, then persist in JWT.
+      if (!nextToken.role || !nextToken.id) {
+        const [userInDb] = await db
+          .select({
+            id: users.id,
+            role: users.role,
+          })
+          .from(users)
+          .where(eq(users.email, nextToken.email))
+          .limit(1);
+
+        if (userInDb) {
+          nextToken = {
+            ...nextToken,
+            id: userInDb.id,
+            role: userInDb.role,
+          };
+        }
       }
 
-      return {
-        ...token,
-        id: userInDb.id,
-        role: userInDb.role,
-      };
+      if (!nextToken.id) {
+        return nextToken;
+      }
+
+      if (
+        typeof nextToken.currentOrganizationId === "undefined" ||
+        typeof nextToken.currentOrganizationRole === "undefined"
+      ) {
+        const [activeMembership] = await db
+          .select({
+            organizationId: organizationMemberships.organizationId,
+            role: organizationMemberships.role,
+          })
+          .from(organizationMemberships)
+          .innerJoin(
+            organizations,
+            eq(organizationMemberships.organizationId, organizations.id),
+          )
+          .where(
+            and(
+              eq(organizationMemberships.userId, nextToken.id),
+              eq(organizationMemberships.state, "ACTIVE"),
+              eq(organizations.status, "ACTIVE"),
+            ),
+          )
+          .orderBy(asc(organizationMemberships.createdAt))
+          .limit(1);
+
+        nextToken = {
+          ...nextToken,
+          currentOrganizationId: activeMembership?.organizationId ?? null,
+          currentOrganizationRole: activeMembership?.role ?? null,
+        };
+      }
+
+      return nextToken;
     },
     async session({ session, token }) {
-      session = {
+      return {
         ...session,
         user: {
           id: token.id,
           email: token.email,
           role: token.role,
           name: token.name,
+          currentOrganizationId: token.currentOrganizationId ?? null,
+          currentOrganizationRole: token.currentOrganizationRole ?? null,
         },
-      } as any;
-      return session;
+      } as typeof session;
     },
   },
 });
+
+type OrganizationMembershipRow = {
+  organizationId: string;
+  role: "OWNER" | "ADMIN" | "MEMBER";
+  state: "ACTIVE" | "REVOKED";
+};
+
+export async function getOrganizationMembershipForUser(input: {
+  organizationId: string;
+  userId: string;
+}): Promise<OrganizationMembershipRow | null> {
+  const db = getDb();
+  if (!db) {
+    return null;
+  }
+
+  const [membership] = await db
+    .select({
+      organizationId: organizationMemberships.organizationId,
+      role: organizationMemberships.role,
+      state: organizationMemberships.state,
+    })
+    .from(organizationMemberships)
+    .innerJoin(
+      organizations,
+      eq(organizationMemberships.organizationId, organizations.id),
+    )
+    .where(
+      and(
+        eq(organizationMemberships.organizationId, input.organizationId),
+        eq(organizationMemberships.userId, input.userId),
+        eq(organizations.status, "ACTIVE"),
+      ),
+    )
+    .limit(1);
+
+  return membership ?? null;
+}
+
+export async function requireOrganizationAdminOrOwner(input: {
+  organizationId: string;
+  userId: string;
+}): Promise<
+  { ok: true; role: "OWNER" | "ADMIN" } | { ok: false; message: string }
+> {
+  const membership = await getOrganizationMembershipForUser(input);
+
+  if (!membership || membership.state !== "ACTIVE") {
+    return {
+      ok: false,
+      message: "You are not a member of this organization.",
+    };
+  }
+
+  if (membership.role !== "OWNER" && membership.role !== "ADMIN") {
+    return {
+      ok: false,
+      message: "You need admin access for this organization.",
+    };
+  }
+
+  return {
+    ok: true,
+    role: membership.role,
+  };
+}
