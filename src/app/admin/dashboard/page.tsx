@@ -3,11 +3,14 @@ import Link from "next/link";
 import { fetchSeededCourses } from "@/app/actions/courses";
 import { getDashboardPathForRole } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
+import { getDb } from "@/db";
+import { organizationMemberships, organizations } from "@/db/schema";
 
 import NewCourseButton from "@/components/admin/new-course/New-course-button";
 import CourseSummaryCard from "@/components/course-summary-card/Course-summary-card";
 import { DashboardCourse } from "@/components/course-summary-card/definitions";
 import { CourseStatus } from "@/shared/types/storyboard";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 type SortOption = "updatedAt_desc" | "createdAt_desc" | "title_asc";
@@ -143,7 +146,7 @@ function mapSeededCourseToDashboardCourse(
 
 export default async function Dashboard({ searchParams }: DashboardPageProps) {
   const session = await getSessionSafely();
-  if (!session?.user?.email) {
+  if (!session?.user?.email || !session.user.id) {
     redirect("/auth/signin");
   }
 
@@ -161,6 +164,30 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
   const createdByMe = getCreatedByMe(
     getStringParam(resolvedSearchParams.createdByMe),
   );
+
+  const db = getDb();
+
+  const organizationsForUser = db
+    ? await db
+        .select({
+          id: organizations.id,
+          name: organizations.name,
+          slug: organizations.slug,
+          membershipRole: organizationMemberships.role,
+        })
+        .from(organizationMemberships)
+        .innerJoin(
+          organizations,
+          eq(organizations.id, organizationMemberships.organizationId),
+        )
+        .where(
+          and(
+            eq(organizationMemberships.userId, session.user.id),
+            eq(organizationMemberships.state, "ACTIVE"),
+            eq(organizations.status, "ACTIVE"),
+          ),
+        )
+    : [];
 
   const allCourses = (await fetchSeededCourses()) as
     | SeededCourseRecord[]
@@ -210,6 +237,38 @@ export default async function Dashboard({ searchParams }: DashboardPageProps) {
     <main className="min-h-screen bg-background px-6 py-10 text-foreground md:px-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
         <NewCourseButton />
+
+        {organizationsForUser.length > 0 ? (
+          <section className="rounded-3xl border border-border bg-surface p-4">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Organization Admin
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">
+                  Jump into an organization workspace
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {organizationsForUser.map((organization) => (
+                <Link
+                  key={organization.id}
+                  href={`/admin/org/${organization.slug}/dashboard`}
+                  className="rounded-2xl border border-border bg-background px-4 py-3 transition hover:border-primary/40 hover:bg-muted/40"
+                >
+                  <p className="text-sm font-semibold text-foreground">
+                    {organization.name}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    {organization.membershipRole}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <form
           className="rounded-3xl border border-border bg-surface p-4"
