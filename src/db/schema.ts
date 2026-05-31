@@ -313,6 +313,71 @@ export const organizationInvites = pgTable(
   ],
 );
 
+export const organizationCourseAssignments = pgTable(
+  "organization_course_assignments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id),
+    assignedByUserId: uuid("assigned_by_user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("organization_course_assignments_org_course_unique").on(
+      table.organizationId,
+      table.courseId,
+    ),
+    index("organization_course_assignments_organization_id_idx").on(
+      table.organizationId,
+    ),
+    index("organization_course_assignments_course_id_idx").on(table.courseId),
+  ],
+);
+
+export const organizationMemberCourseAssignments = pgTable(
+  "organization_member_course_assignments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id),
+    sourceAssignmentId: uuid("source_assignment_id").references(
+      () => organizationCourseAssignments.id,
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex(
+      "organization_member_course_assignments_org_user_course_unique",
+    ).on(table.organizationId, table.userId, table.courseId),
+    index("organization_member_course_assignments_organization_id_idx").on(
+      table.organizationId,
+    ),
+    index("organization_member_course_assignments_user_id_idx").on(
+      table.userId,
+    ),
+    index("organization_member_course_assignments_course_id_idx").on(
+      table.courseId,
+    ),
+  ],
+);
+
 export const webhookEndpoints = pgTable(
   "webhook_endpoints",
   {
