@@ -96,7 +96,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: users.role,
           })
           .from(users)
-          .where(eq(users.email, nextToken.email))
+          .where(eq(users.email, nextToken.email as string))
           .limit(1);
 
         if (userInDb) {
@@ -128,7 +128,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           )
           .where(
             and(
-              eq(organizationMemberships.userId, nextToken.id),
+              eq(organizationMemberships.userId, nextToken.id as string),
               eq(organizationMemberships.state, "ACTIVE"),
               eq(organizations.status, "ACTIVE"),
             ),
