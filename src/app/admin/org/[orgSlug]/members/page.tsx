@@ -147,6 +147,12 @@ export default async function OrganizationMembersPage({ params }: PageProps) {
           >
             Assignments
           </Link>
+          <Link
+            href={`/admin/org/${organization.slug}/integrations`}
+            className="rounded-lg border border-border bg-background px-3 py-2 font-semibold text-muted-foreground transition hover:bg-muted"
+          >
+            Integrations
+          </Link>
         </nav>
       </header>
 

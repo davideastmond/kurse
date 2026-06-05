@@ -1,5 +1,6 @@
 "use server";
 
+import { enqueueWebhookEvent } from "@/app/actions/webhooks";
 import { getSessionSafely } from "@/auth/session";
 import { getDb } from "@/db";
 import { enrollments, users } from "@/db/schema";
@@ -19,6 +20,28 @@ type StudentEnrollmentInput = {
 type CourseEnrollmentInput = {
   courseId: string;
 };
+
+async function emitEnrollmentCreatedEvents(
+  rows: Array<{ id: string; courseId: string; userId: string }>,
+) {
+  for (const row of rows) {
+    const enqueueResult = await enqueueWebhookEvent({
+      eventType: "enrollment.created",
+      data: {
+        enrollmentId: row.id,
+        courseId: row.courseId,
+        userId: row.userId,
+      },
+    });
+
+    if (!enqueueResult.ok) {
+      console.error("Failed to enqueue enrollment.created webhook event:", {
+        enrollmentId: row.id,
+        message: enqueueResult.message,
+      });
+    }
+  }
+}
 
 async function ensureAdminAccess(): Promise<EnrollmentActionResult | null> {
   const session = await getSessionSafely();
@@ -68,13 +91,22 @@ export async function enrollStudentInCourse(
   }
 
   try {
-    await db
+    const insertedEnrollments = await db
       .insert(enrollments)
       .values({
         courseId: input.courseId,
         userId: input.studentId,
       })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({
+        id: enrollments.id,
+        courseId: enrollments.courseId,
+        userId: enrollments.userId,
+      });
+
+    if (insertedEnrollments.length > 0) {
+      await emitEnrollmentCreatedEvents(insertedEnrollments);
+    }
 
     revalidatePath("/admin/enrollments");
 
@@ -169,8 +201,14 @@ export async function enrollAllStudentsInCourse(
       .from(users)
       .where(eq(users.role, "STUDENT"));
 
+    let insertedEnrollments: Array<{
+      id: string;
+      courseId: string;
+      userId: string;
+    }> = [];
+
     if (studentRows.length > 0) {
-      await db
+      insertedEnrollments = await db
         .insert(enrollments)
         .values(
           studentRows.map((student) => ({
@@ -178,7 +216,16 @@ export async function enrollAllStudentsInCourse(
             userId: student.id,
           })),
         )
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({
+          id: enrollments.id,
+          courseId: enrollments.courseId,
+          userId: enrollments.userId,
+        });
+    }
+
+    if (insertedEnrollments.length > 0) {
+      await emitEnrollmentCreatedEvents(insertedEnrollments);
     }
 
     revalidatePath("/admin/enrollments");

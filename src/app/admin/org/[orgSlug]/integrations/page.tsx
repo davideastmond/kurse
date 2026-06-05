@@ -1,16 +1,14 @@
+import {
+  listOrganizationWebhookDeliveryQueue,
+  listOrganizationWebhookEndpoints,
+} from "@/app/actions/webhooks";
 import { requireOrganizationAdminOrOwner } from "@/auth/auth";
 import { getDashboardPathForRole } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
-import AssignmentPanel from "@/components/admin/org-assignments/Assignment-panel";
+import IntegrationsManager from "@/components/admin/org-integrations/Integrations-manager";
 import { getDb } from "@/db";
-import {
-  courses,
-  organizationMemberCourseAssignments,
-  organizationMemberships,
-  organizations,
-  users,
-} from "@/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { organizations } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -18,7 +16,7 @@ type PageProps = {
   params: Promise<{ orgSlug: string }> | { orgSlug: string };
 };
 
-export default async function OrganizationAssignmentsPage({
+export default async function OrganizationIntegrationsPage({
   params,
 }: PageProps) {
   const session = await getSessionSafely();
@@ -69,56 +67,16 @@ export default async function OrganizationAssignmentsPage({
     redirect("/admin/dashboard");
   }
 
-  const courseRows = await db
-    .select({
-      id: courses.id,
-      title: courses.title,
-      status: courses.status,
-    })
-    .from(courses)
-    .orderBy(courses.title);
-
-  const memberRows = await db
-    .select({
-      userId: users.id,
-      name: users.name,
-      email: users.email,
-      role: organizationMemberships.role,
-    })
-    .from(organizationMemberships)
-    .innerJoin(users, eq(users.id, organizationMemberships.userId))
-    .where(
-      and(
-        eq(organizationMemberships.organizationId, organization.id),
-        eq(organizationMemberships.state, "ACTIVE"),
-      ),
-    )
-    .orderBy(users.name);
-
-  const assignmentRows = await db
-    .select({
-      userId: organizationMemberCourseAssignments.userId,
-      memberName: users.name,
-      courseId: organizationMemberCourseAssignments.courseId,
-      courseTitle: courses.title,
-      createdAt: organizationMemberCourseAssignments.createdAt,
-    })
-    .from(organizationMemberCourseAssignments)
-    .innerJoin(users, eq(users.id, organizationMemberCourseAssignments.userId))
-    .innerJoin(
-      courses,
-      eq(courses.id, organizationMemberCourseAssignments.courseId),
-    )
-    .where(
-      eq(organizationMemberCourseAssignments.organizationId, organization.id),
-    )
-    .orderBy(desc(organizationMemberCourseAssignments.createdAt));
+  const [endpoints, deliveryLogs] = await Promise.all([
+    listOrganizationWebhookEndpoints({ organizationId: organization.id }),
+    listOrganizationWebhookDeliveryQueue({ organizationId: organization.id }),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-6 py-10 md:px-10">
       <header className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Organization assignments
+          Organization integrations
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">
           {organization.name}
@@ -138,29 +96,46 @@ export default async function OrganizationAssignmentsPage({
           </Link>
           <Link
             href={`/admin/org/${organization.slug}/assignments`}
-            className="rounded-lg border border-border bg-surface px-3 py-2 font-semibold text-foreground"
+            className="rounded-lg border border-border bg-background px-3 py-2 font-semibold text-muted-foreground transition hover:bg-muted"
           >
             Assignments
           </Link>
           <Link
             href={`/admin/org/${organization.slug}/integrations`}
-            className="rounded-lg border border-border bg-background px-3 py-2 font-semibold text-muted-foreground transition hover:bg-muted"
+            className="rounded-lg border border-border bg-surface px-3 py-2 font-semibold text-foreground"
           >
             Integrations
           </Link>
         </nav>
       </header>
 
-      <AssignmentPanel
+      <IntegrationsManager
         organizationId={organization.id}
-        courses={courseRows}
-        members={memberRows}
-        assignments={assignmentRows.map((assignment) => ({
-          userId: assignment.userId,
-          memberName: assignment.memberName,
-          courseId: assignment.courseId,
-          courseTitle: assignment.courseTitle,
-          createdAtIso: assignment.createdAt.toISOString(),
+        endpoints={endpoints.map((endpoint) => ({
+          id: endpoint.id,
+          url: endpoint.url,
+          status: endpoint.status,
+          createdAtIso: endpoint.createdAt.toISOString(),
+          updatedAtIso: endpoint.updatedAt.toISOString(),
+          eventTypes: endpoint.eventTypes,
+        }))}
+        deliveryLogs={deliveryLogs.map((delivery) => ({
+          id: delivery.id,
+          endpointId: delivery.endpointId,
+          endpointUrl: delivery.endpointUrl,
+          eventId: delivery.eventId,
+          eventType: delivery.eventType,
+          attempt: delivery.attempt,
+          status: delivery.status,
+          responseCode: delivery.responseCode,
+          responseBodySnippet: delivery.responseBodySnippet,
+          nextRetryAtIso: delivery.nextRetryAt
+            ? delivery.nextRetryAt.toISOString()
+            : null,
+          deliveredAtIso: delivery.deliveredAt
+            ? delivery.deliveredAt.toISOString()
+            : null,
+          createdAtIso: delivery.createdAt.toISOString(),
         }))}
       />
     </main>

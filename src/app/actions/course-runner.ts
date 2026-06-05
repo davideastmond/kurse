@@ -1,5 +1,6 @@
 "use server";
 
+import { enqueueWebhookEvent } from "@/app/actions/webhooks";
 import type { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
 import { getSessionSafely } from "@/auth/session";
 import { getDb } from "@/db";
@@ -42,6 +43,7 @@ export async function completeLessonProgress(
 ): Promise<CompleteLessonResult> {
   const session = await getSessionSafely();
   const userId = session?.user?.id;
+  const organizationId = session?.user?.currentOrganizationId ?? null;
 
   if (!userId) {
     return {
@@ -50,10 +52,16 @@ export async function completeLessonProgress(
     };
   }
 
-  if (!input.enrollmentId || !input.courseRecordId || !input.lessonId || !input.courseSlug) {
+  if (
+    !input.enrollmentId ||
+    !input.courseRecordId ||
+    !input.lessonId ||
+    !input.courseSlug
+  ) {
     return {
       ok: false,
-      message: "Enrollment, course record, lesson, and course slug are required.",
+      message:
+        "Enrollment, course record, lesson, and course slug are required.",
     };
   }
 
@@ -110,8 +118,10 @@ export async function completeLessonProgress(
 
   const structure = (courseRow.structure ?? {}) as SeededCourseStructure;
   const moduleList = Array.isArray(structure.modules) ? structure.modules : [];
-  const lessonExists = moduleList.some((m) =>
-    Array.isArray(m.lessons) && m.lessons.some((l: { id: string }) => l.id === input.lessonId),
+  const lessonExists = moduleList.some(
+    (m) =>
+      Array.isArray(m.lessons) &&
+      m.lessons.some((l: { id: string }) => l.id === input.lessonId),
   );
 
   if (!lessonExists) {
@@ -122,13 +132,28 @@ export async function completeLessonProgress(
   }
 
   try {
-    await db
+    const insertedProgress = await db
       .insert(lessonProgress)
       .values({
         enrollmentId: input.enrollmentId,
         lessonId: input.lessonId,
       })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ id: lessonProgress.id });
+
+    if (insertedProgress.length > 0) {
+      await enqueueRunnerWebhookEvent({
+        eventType: "lesson.completed",
+        organizationId,
+        data: {
+          lessonProgressId: insertedProgress[0].id,
+          enrollmentId: input.enrollmentId,
+          courseId: input.courseRecordId,
+          lessonId: input.lessonId,
+          userId,
+        },
+      });
+    }
 
     revalidatePath(`/user/learn/${input.courseSlug}`);
 
@@ -172,11 +197,35 @@ type SubmitEvaluationAttemptResult =
       message: string;
     };
 
+async function enqueueRunnerWebhookEvent(input: {
+  eventType:
+    | "lesson.completed"
+    | "evaluation.submitted"
+    | "evaluation.passed"
+    | "evaluation.failed"
+    | "course.completed";
+  organizationId?: string | null;
+  data: Record<string, unknown>;
+}) {
+  const enqueueResult = await enqueueWebhookEvent({
+    eventType: input.eventType,
+    organizationId: input.organizationId ?? null,
+    data: input.data,
+  });
+
+  if (!enqueueResult.ok) {
+    console.error(`Failed to enqueue ${input.eventType} webhook event:`, {
+      message: enqueueResult.message,
+    });
+  }
+}
+
 export async function submitEvaluationAttempt(
   input: SubmitEvaluationAttemptInput,
 ): Promise<SubmitEvaluationAttemptResult> {
   const session = await getSessionSafely();
   const userId = session?.user?.id;
+  const organizationId = session?.user?.currentOrganizationId ?? null;
 
   if (!userId) {
     return { ok: false, message: "You must be signed in." };
@@ -203,7 +252,11 @@ export async function submitEvaluationAttempt(
 
   // Verify the enrollment belongs to the current user and to the intended course.
   const [enrollment] = await db
-    .select({ id: enrollments.id, courseId: enrollments.courseId })
+    .select({
+      id: enrollments.id,
+      courseId: enrollments.courseId,
+      completedAt: enrollments.completedAt,
+    })
     .from(enrollments)
     .where(
       and(
@@ -360,12 +413,62 @@ export async function submitEvaluationAttempt(
       score: scorePercent,
     });
 
+    await enqueueRunnerWebhookEvent({
+      eventType: "evaluation.submitted",
+      organizationId,
+      data: {
+        attemptId: attempt.id,
+        enrollmentId: input.enrollmentId,
+        evaluationId,
+        courseId: input.courseRecordId,
+        scope: input.scope,
+        moduleId: input.moduleId ?? null,
+        score: scorePercent,
+        passed,
+        userId,
+      },
+    });
+
+    await enqueueRunnerWebhookEvent({
+      eventType: passed ? "evaluation.passed" : "evaluation.failed",
+      organizationId,
+      data: {
+        attemptId: attempt.id,
+        enrollmentId: input.enrollmentId,
+        evaluationId,
+        courseId: input.courseRecordId,
+        scope: input.scope,
+        moduleId: input.moduleId ?? null,
+        score: scorePercent,
+        userId,
+      },
+    });
+
     // Stamp course completion when a course-scoped evaluation is passed.
     if (input.scope === "COURSE" && passed) {
-      await db
+      const completedEnrollments = await db
         .update(enrollments)
         .set({ completedAt: sql`now()` })
-        .where(eq(enrollments.id, input.enrollmentId));
+        .where(
+          and(
+            eq(enrollments.id, input.enrollmentId),
+            isNull(enrollments.completedAt),
+          ),
+        )
+        .returning({ id: enrollments.id });
+
+      if (completedEnrollments.length > 0 && enrollment.completedAt === null) {
+        await enqueueRunnerWebhookEvent({
+          eventType: "course.completed",
+          organizationId,
+          data: {
+            enrollmentId: input.enrollmentId,
+            courseId: input.courseRecordId,
+            userId,
+            score: scorePercent,
+          },
+        });
+      }
     }
 
     revalidatePath(`/user/learn/${input.courseSlug}`);
