@@ -36,6 +36,36 @@ npm run verify-course-trigger
 
 Verifies the insert trigger sets `courses.structure.courseId` to the database-generated `courses.id`.
 
+## Environment Variables
+
+Required for local development:
+
+- `DATABASE_URL`: Postgres connection string used by Drizzle.
+- `NEXT_AUTH_SECRET`: secret used by NextAuth session and token signing.
+
+Required when using AI quiz generation:
+
+- `ANTHROPIC_API_KEY`: API key for Claude quiz generation.
+
+Optional but recommended for production workflows:
+
+- `REDIS_URL`: enables Redis-backed quiz generation rate limits and background queue support.
+
+## Organization + Webhook Features
+
+Organization and integrations features (Phases 1-4) rely on existing Drizzle migrations in `drizzle/`.
+
+1. Apply database migrations before running features that use org membership, seat ledger, or webhooks.
+2. Sign in as an admin user to access organization admin routes.
+3. Organization integrations are available at `/admin/org/[orgSlug]/integrations`.
+4. Endpoint secrets are shown once at create/rotate time; store them securely.
+
+Webhook behavior:
+
+- Delivery model is at-least-once.
+- Failed attempts persist and schedule retries using exponential backoff.
+- Admin UI supports replaying failed and dead-letter deliveries.
+
 ## AI Quiz Generation Rate Limits
 
 AI quiz generation is rate-limited server-side:
