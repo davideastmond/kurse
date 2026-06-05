@@ -66,13 +66,18 @@ export default function OrganizationMembersManager({
               role,
             });
 
-            if (!result.ok) {
+            if (
+              !result.ok ||
+              !("inviteToken" in result) ||
+              !("expiresAt" in result)
+            ) {
               setNotice(result.message ?? "Unable to create invite.");
               return;
             }
 
             setEmail("");
             setRole("MEMBER");
+
             setInviteNotice({
               token: result.inviteToken,
               expiresAt: result.expiresAt,
