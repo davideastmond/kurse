@@ -249,7 +249,7 @@ export async function enqueueWebhookEvent<TData = WebhookPayloadJson>(
           eventId,
           endpointId: endpoint.endpointId,
           attempt: 1,
-          status: "PENDING",
+          status: "PENDING" as const,
         })),
       );
     }
@@ -404,7 +404,7 @@ export async function createWebhookEndpoint(input: {
     return {
       ok: false,
       message: orgState.message,
-    };
+    } as WebhookEndpointActionResult;
   }
 
   const secret = createWebhookSecret();
@@ -480,7 +480,7 @@ export async function updateWebhookEndpoint(input: {
     return {
       ok: false,
       message: orgState.message,
-    };
+    } as WebhookEndpointActionResult;
   }
 
   const [endpoint] = await orgState.db
@@ -563,7 +563,7 @@ export async function deleteWebhookEndpoint(input: {
     return {
       ok: false,
       message: orgState.message,
-    };
+    } as WebhookEndpointActionResult;
   }
 
   try {
@@ -626,7 +626,7 @@ export async function rotateWebhookEndpointSecret(input: {
     return {
       ok: false,
       message: orgState.message,
-    };
+    } as WebhookEndpointActionResult;
   }
 
   const secret = createWebhookSecret();
@@ -687,7 +687,7 @@ export async function replayWebhookDelivery(input: {
     return {
       ok: false,
       message: orgState.message,
-    };
+    } as WebhookEndpointActionResult;
   }
 
   const [delivery] = await orgState.db
