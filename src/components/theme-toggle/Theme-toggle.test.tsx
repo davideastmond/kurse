@@ -20,6 +20,7 @@ beforeEach(() => {
 
   Object.defineProperty(window, "matchMedia", {
     writable: true,
+    configurable: true,
     value: (query: string) => ({
       matches: query.includes("dark"),
       media: query,
