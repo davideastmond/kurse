@@ -63,7 +63,7 @@
     --primary-foreground: #07132c;
     --success: #4ade80;
     --warning: #fbbf24;
-    --danger: #f87171;
+    --danger: #8a0c0c;
   }
 }
 
@@ -80,7 +80,7 @@
   --primary-foreground: #07132c;
   --success: #4ade80;
   --warning: #fbbf24;
-  --danger: #f87171;
+  --danger: #8a0c0c;
 }
 
 :root[data-theme="light"] {

@@ -22,6 +22,7 @@ export default function EvaluationRunner({
   courseSlug,
   scope,
   moduleId,
+  previewMode = false,
   onPass,
 }: EvaluationRunnerProps) {
   const [isPending, startTransition] = useTransition();
@@ -81,6 +82,21 @@ export default function EvaluationRunner({
     }
 
     setErrorMessage(null);
+
+    if (previewMode) {
+      const correctCount = questions.filter(
+        (question) => answers[question.id] === question.correctOptionId,
+      ).length;
+      const scorePercent = (correctCount / questions.length) * 100;
+      const passed = scorePercent >= evaluation.passingScore;
+
+      setResult({
+        passed,
+        score: scorePercent,
+        attemptId: "preview-attempt",
+      });
+      return;
+    }
 
     startTransition(async () => {
       const res = await submitEvaluationAttempt({

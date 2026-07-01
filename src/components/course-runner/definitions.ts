@@ -69,6 +69,7 @@ export type EvaluationRunnerProps = {
   courseSlug: string;
   scope: "MODULE" | "COURSE";
   moduleId?: string;
+  previewMode?: boolean;
   onPass: () => void;
 };
 
@@ -79,4 +80,5 @@ export type CourseRunnerProps = {
   completedLessonIds: string[];
   passedModuleEvalIds: string[];
   courseEvalPassed: boolean;
+  previewMode?: boolean;
 };

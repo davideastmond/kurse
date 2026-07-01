@@ -3,6 +3,7 @@ import { getDashboardPathForRole } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
 import ThemeToggle from "@/components/theme-toggle/Theme-toggle";
 import Link from "next/link";
+import packageJson from "../../../package.json";
 
 async function signOutAction() {
   "use server";
@@ -17,17 +18,23 @@ export default async function Navbar() {
   const user = session?.user;
   const role = user?.role;
   const dashboardPath = getDashboardPathForRole(role);
+  const appVersion = packageJson.version;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/85 backdrop-blur">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-8">
         <div className="flex items-center gap-4 md:gap-6">
-          <Link
-            href={dashboardPath}
-            className="text-lg font-semibold tracking-tight text-foreground"
-          >
-            Kurse
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={dashboardPath}
+              className="text-lg font-semibold tracking-tight text-foreground"
+            >
+              Kurse
+            </Link>
+            <span className="rounded-md border border-border/80 bg-muted/60 px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+              v{appVersion}
+            </span>
+          </div>
 
           <nav className="hidden items-center gap-2 md:flex">
             <Link
