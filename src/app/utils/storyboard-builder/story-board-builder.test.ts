@@ -81,4 +81,67 @@ describe("StoryboardBuilder link block validation", () => {
       message: "link URL must be a valid http or https URL.",
     });
   });
+
+  it("requires linkUrl for link blocks", () => {
+    const malformed = createFixture();
+    malformed.modules[0].lessons[0].blocks[0] = {
+      ...malformed.modules[0].lessons[0].blocks[0],
+      linkUrl: "",
+    };
+
+    const result = StoryboardBuilder.fromApi(malformed);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+
+    expect(result.errors).toContainEqual({
+      code: "INVALID_FIELD",
+      path: "course.modules[0].lessons[0].blocks[0].linkUrl",
+      message: "link URL is required for link blocks.",
+    });
+  });
+
+  it("rejects non-string linkLabel values", () => {
+    const malformed = createFixture();
+    malformed.modules[0].lessons[0].blocks[0] = {
+      ...malformed.modules[0].lessons[0].blocks[0],
+      linkLabel: 123 as unknown as string,
+    };
+
+    const result = StoryboardBuilder.fromApi(malformed);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+
+    expect(result.errors).toContainEqual({
+      code: "INVALID_FIELD",
+      path: "course.modules[0].lessons[0].blocks[0].linkLabel",
+      message: "link label must be a string when provided.",
+    });
+  });
+
+  it("rejects non-boolean openInNewTab values", () => {
+    const malformed = createFixture();
+    malformed.modules[0].lessons[0].blocks[0] = {
+      ...malformed.modules[0].lessons[0].blocks[0],
+      openInNewTab: "yes" as unknown as boolean,
+    };
+
+    const result = StoryboardBuilder.fromApi(malformed);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+
+    expect(result.errors).toContainEqual({
+      code: "INVALID_FIELD",
+      path: "course.modules[0].lessons[0].blocks[0].openInNewTab",
+      message: "openInNewTab must be a boolean when provided.",
+    });
+  });
 });
