@@ -144,4 +144,186 @@ describe("StoryboardBuilder link block validation", () => {
       message: "openInNewTab must be a boolean when provided.",
     });
   });
+
+  it("rejects non-string detail values for image blocks", () => {
+    const malformed = createFixture();
+    malformed.modules[0].lessons[0].blocks[0] = {
+      ...malformed.modules[0].lessons[0].blocks[0],
+      type: "image",
+      detail: 42 as unknown as string,
+    };
+
+    const result = StoryboardBuilder.fromApi(malformed);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+
+    expect(result.errors).toContainEqual({
+      code: "INVALID_FIELD",
+      path: "course.modules[0].lessons[0].blocks[0].detail",
+      message: "block detail must be a string when provided.",
+    });
+  });
+
+  it("requires block duration", () => {
+    const malformed = createFixture();
+    malformed.modules[0].lessons[0].blocks[0] = {
+      ...malformed.modules[0].lessons[0].blocks[0],
+      duration: "",
+    };
+
+    const result = StoryboardBuilder.fromApi(malformed);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+
+    expect(result.errors).toContainEqual({
+      code: "INVALID_FIELD",
+      path: "course.modules[0].lessons[0].blocks[0].duration",
+      message: "block duration is required.",
+    });
+  });
+
+  it("rejects out-of-range richtext font sizes", () => {
+    const malformed = createFixture();
+    malformed.modules[0].lessons[0].blocks[0] = {
+      ...malformed.modules[0].lessons[0].blocks[0],
+      type: "richtext",
+      fontSizePx: 100,
+    };
+
+    const result = StoryboardBuilder.fromApi(malformed);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+
+    expect(result.errors).toContainEqual({
+      code: "INVALID_FIELD",
+      path: "course.modules[0].lessons[0].blocks[0].fontSizePx",
+      message: "font size must be an integer between 9 and 72.",
+    });
+  });
+});
+
+describe("StoryboardBuilder render and version behavior", () => {
+  it("builds a render model from normalized structure", () => {
+    const fixture = createFixture();
+    fixture.modules[0].progressLabel = "1 of 1";
+    fixture.modules[0].evaluationTitle = "Wrap-up";
+
+    const result = StoryboardBuilder.fromApi(fixture);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+
+    const renderModel = result.value.toRenderModel();
+
+    expect(renderModel.course.id).toBe("course_link_test");
+    expect(renderModel.modules).toHaveLength(1);
+    expect(renderModel.modules[0].id).toBe("m1");
+    expect(renderModel.modules[0].progressLabel).toBe("1 of 1");
+    expect(renderModel.modules[0].evaluationTitle).toBe("Wrap-up");
+    expect(renderModel.modules[0].lessons).toHaveLength(1);
+    expect(renderModel.modules[0].lessons[0].id).toBe("l1");
+    expect(renderModel.modules[0].lessons[0].blocks).toHaveLength(1);
+    expect(renderModel.modules[0].lessons[0].blocks[0].type).toBe("link");
+  });
+
+  it("preserves module evaluation in render and API models", () => {
+    const fixture = createFixture();
+    fixture.modules[0].evaluation = {
+      id: "me1",
+      title: "Module Checkpoint",
+      passingScore: 80,
+      questions: [],
+    };
+
+    const result = StoryboardBuilder.fromApi(fixture);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+
+    expect(result.value.toRenderModel().modules[0].evaluation).toEqual({
+      id: "me1",
+      title: "Module Checkpoint",
+      passingScore: 80,
+      questions: [],
+    });
+    expect(result.value.toApiPayload().modules[0].evaluation).toEqual({
+      id: "me1",
+      title: "Module Checkpoint",
+      passingScore: 80,
+      questions: [],
+    });
+  });
+
+  it("returns validation errors for invalid version changes", () => {
+    const result = StoryboardBuilder.fromApi(createFixture());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+
+    const invalid = result.value.withVersion(0);
+
+    expect(invalid.ok).toBe(false);
+    if (invalid.ok) {
+      return;
+    }
+
+    expect(invalid.errors).toEqual([
+      {
+        code: "INVALID_FIELD",
+        path: "course.version",
+        message: "course version must be an integer greater than 0.",
+      },
+    ]);
+  });
+
+  it("creates a new builder with an updated version", () => {
+    const result = StoryboardBuilder.fromApi(createFixture());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+
+    const next = result.value.withVersion(2);
+
+    expect(next.ok).toBe(true);
+    if (!next.ok) {
+      return;
+    }
+
+    expect(next.value.toApiPayload().version).toBe(2);
+    expect(result.value.toApiPayload().version).toBe(1);
+  });
+
+  it("returns defensive copies from toJSONB", () => {
+    const result = StoryboardBuilder.fromApi(createFixture());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+
+    const snapshot = result.value.toJSONB();
+    snapshot.course.version = 99;
+    snapshot.modulesById.m1.title = "Mutated";
+
+    const secondRead = result.value.toJSONB();
+    expect(secondRead.course.version).toBe(1);
+    expect(secondRead.modulesById.m1.title).toBe("Module 1");
+  });
 });
