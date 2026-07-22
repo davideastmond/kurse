@@ -14,3 +14,9 @@ export type DashboardCourse = {
   modules: unknown[];
   version: number;
 };
+
+export type CourseSummaryCardProps = {
+  course: DashboardCourse;
+  href?: string;
+  synopsis?: string;
+};
