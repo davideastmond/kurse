@@ -15,7 +15,11 @@ export default defineConfig({
   test: {
     environment: "node",
     coverage: {
-      exclude: [...(configDefaults.coverage.exclude || []), "src/db/schema.ts"],
+      exclude: [
+        ...(configDefaults.coverage.exclude || []),
+        "src/db/schema.ts",
+        "src/db/index.ts",
+      ],
     },
   },
 });
