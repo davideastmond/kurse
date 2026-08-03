@@ -339,6 +339,7 @@ export default function EvaluationRunner({
             type="button"
             onClick={handleNext}
             disabled={!canAdvance || isPending}
+            data-testid="next-button"
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >
             Next
