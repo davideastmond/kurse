@@ -85,7 +85,6 @@ import { getSessionSafely } from "@/auth/session";
 import { getDb } from "@/db";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { notFound } from "next/navigation";
 import type { ApiCoursePayload } from "../utils/storyboard-builder/definitions";
 import {
   createCourse,
@@ -100,7 +99,7 @@ const mockedGetDb = vi.mocked(getDb);
 const mockedGenerateQuizQuestions = vi.mocked(generateQuizQuestionsMock);
 const mockedGetRedisClientConnected = vi.mocked(getRedisClientConnectedMock);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
-const mockedNotFound = vi.mocked(notFound);
+
 const mockedAnd = vi.mocked(and);
 const mockedEq = vi.mocked(eq);
 

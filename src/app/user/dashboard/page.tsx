@@ -1,5 +1,6 @@
 import { getDashboardPathForRole } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
+import CourseSummaryCard from "@/components/course-summary-card/Course-summary-card";
 import { getDb } from "@/db";
 import { courses, enrollments } from "@/db/schema";
 import { and, count, desc, eq, ilike, isNull } from "drizzle-orm";
@@ -94,6 +95,25 @@ export default async function UserDashboardPage({
 
   const hasResults = enrolledCourses.length > 0;
 
+  const userDashboardCourses = enrolledCourses.map((course) => ({
+    id: course.id,
+    title: course.title,
+    slug: course.slug,
+    status: "PUBLISHED" as const,
+    synopsis: course.description,
+    estimatedDuration: "",
+    enrolledCount: 1,
+    coverAccent: "",
+    audience: "",
+    createdAt: "",
+    updatedAt:
+      course.updatedAt instanceof Date
+        ? course.updatedAt.toISOString()
+        : String(course.updatedAt),
+    modules: [],
+    version: 1,
+  }));
+
   const previousPageHref =
     currentPage > 1
       ? `/user/dashboard?${new URLSearchParams({
@@ -149,19 +169,12 @@ export default async function UserDashboardPage({
 
       {hasResults ? (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {enrolledCourses.map((course) => (
-            <Link
+          {userDashboardCourses.map((course) => (
+            <CourseSummaryCard
               key={course.id}
+              course={course}
               href={`/user/learn/${course.slug}`}
-              className="rounded-2xl border border-border bg-surface p-5 transition hover:border-primary/40 hover:bg-muted/40"
-            >
-              <h2 className="text-lg font-semibold text-foreground">
-                {course.title}
-              </h2>
-              <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
-                {course.description}
-              </p>
-            </Link>
+            />
           ))}
         </section>
       ) : (

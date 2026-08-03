@@ -1,9 +1,9 @@
 "use server";
+import { getSessionSafely } from "@/auth/session";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const SVG_MIME_TYPE = "image/svg+xml";
-const SVG_HEADER_SCAN_BYTES = 4096;
 
 const ALLOWED_CONTENT_TYPE_PREFIXES = ["video/", "image/", "audio/"];
 
@@ -55,10 +55,6 @@ function isSvgFile(file: File) {
   );
 }
 
-function hasValidSvgMarkup(headerText: string) {
-  return /<svg\b/i.test(headerText);
-}
-
 function joinUrl(baseUrl: string, objectKey: string) {
   const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
   const normalizedKey = objectKey.startsWith("/")
@@ -71,6 +67,14 @@ function joinUrl(baseUrl: string, objectKey: string) {
 export async function uploadToS3(
   formData: FormData,
 ): Promise<{ url: string } | { error: string }> {
+  const session = await getSessionSafely();
+  const userId = session?.user?.id;
+  const userRole = session?.user?.role;
+
+  if (!userId || userRole !== "ADMIN") {
+    return { error: "You are not authorized to upload files." };
+  }
+
   const file = formData.get("file");
 
   if (!(file instanceof File) || file.size === 0) {
@@ -81,36 +85,32 @@ export async function uploadToS3(
     return { error: "File exceeds maximum allowed size of 10 MB" };
   }
 
+  if (isSvgFile(file)) {
+    return {
+      error: "SVG uploads are not allowed.",
+    };
+  }
+
   const isAllowedType = ALLOWED_CONTENT_TYPE_PREFIXES.some((prefix) =>
     file.type.startsWith(prefix),
   );
   if (!isAllowedType) {
     return {
       error:
-        "File type not allowed. Only video, image, SVG, and audio files are accepted.",
+        "File type not allowed. Only video, image, and audio files are accepted.",
     };
   }
 
-  if (isSvgFile(file)) {
-    const svgHeader = new TextDecoder().decode(
-      await file.slice(0, SVG_HEADER_SCAN_BYTES).arrayBuffer(),
-    );
-
-    if (!hasValidSvgMarkup(svgHeader)) {
-      return { error: "File content does not match a valid SVG image." };
-    }
-  } else {
-    // Read just the first 12 bytes to validate magic bytes before touching S3.
-    if (file.size < 12) {
-      return { error: "File must be at least 12 bytes to validate format." };
-    }
-    const headerBuffer = new Uint8Array(await file.slice(0, 12).arrayBuffer());
-    if (!hasAllowedMagicBytes(headerBuffer)) {
-      return {
-        error:
-          "File content does not match allowed media types (video, image, or audio).",
-      };
-    }
+  // Read just the first 12 bytes to validate magic bytes before touching S3.
+  if (file.size < 12) {
+    return { error: "File must be at least 12 bytes to validate format." };
+  }
+  const headerBuffer = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  if (!hasAllowedMagicBytes(headerBuffer)) {
+    return {
+      error:
+        "File content does not match allowed media types (video, image, or audio).",
+    };
   }
 
   const endpoint = process.env.CLOUD_FLARE_S3_ENDPOINT;
