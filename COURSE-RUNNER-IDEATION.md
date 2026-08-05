@@ -57,3 +57,20 @@ This all takes place at `/user/learn/[slug]`
 - Displays overall score, pass/fail status, and a summary of module scores.
 - _v2 placeholder: printable Certificate of Completion (not in scope for v1)._
 - Provides a button to return to the student dashboard.
+
+## Admin Preview Mode (v1)
+
+Purpose: let admins quickly test layout, flow, and content rendering in the Course Runner without requiring enrollment or a published course state.
+
+- Route: `/admin/preview/[slug]`
+- Access: admin-only, same auth gate style as other admin pages.
+- Source of truth: loads the same course structure payload used by the student runner.
+- Persistence: no database writes. Lesson completion and evaluation attempts are local-only in browser state.
+- UX marker: show a clear preview banner indicating progress is not saved.
+- Navigation behavior: preview allows jumping through lessons and evaluations for fast QA.
+
+### Non-goals for v1
+
+- No analytics, grading, or enrollment side effects.
+- No impact on student progress data (`lesson_progress`, `evaluation_attempts`, `grades`, `enrollments`).
+- No role expansion in this phase (teachers can be considered once a teacher role exists in auth/schema).

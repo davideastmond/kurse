@@ -22,6 +22,7 @@ export default function EvaluationRunner({
   courseSlug,
   scope,
   moduleId,
+  previewMode = false,
   onPass,
 }: EvaluationRunnerProps) {
   const [isPending, startTransition] = useTransition();
@@ -81,6 +82,21 @@ export default function EvaluationRunner({
     }
 
     setErrorMessage(null);
+
+    if (previewMode) {
+      const correctCount = questions.filter(
+        (question) => answers[question.id] === question.correctOptionId,
+      ).length;
+      const scorePercent = (correctCount / questions.length) * 100;
+      const passed = scorePercent >= evaluation.passingScore;
+
+      setResult({
+        passed,
+        score: scorePercent,
+        attemptId: "preview-attempt",
+      });
+      return;
+    }
 
     startTransition(async () => {
       const res = await submitEvaluationAttempt({
@@ -323,6 +339,7 @@ export default function EvaluationRunner({
             type="button"
             onClick={handleNext}
             disabled={!canAdvance || isPending}
+            data-testid="next-button"
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >
             Next

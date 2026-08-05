@@ -2,13 +2,11 @@ import { fetchCourseBySlug } from "@/app/actions/courses";
 import { ApiCoursePayload } from "@/app/utils/storyboard-builder/definitions";
 import { getDashboardPathForRole } from "@/auth/dashboard";
 import { getSessionSafely } from "@/auth/session";
-
-import Workspace from "@/components/storyboard/workspace/Workspace";
-import Link from "next/link";
+import CourseRunner from "@/components/course-runner/Course-runner";
 import { redirect } from "next/navigation";
 
-type StoryboardPageProps = {
-  params: Promise<{ courseId: string }> | { courseId: string };
+type AdminPreviewPageProps = {
+  params: Promise<{ slug: string }> | { slug: string };
 };
 
 type SeededCourseStructure = {
@@ -23,18 +21,17 @@ type SeededCourseStructure = {
   };
 };
 
-type SeededCourseRecord = {
+type CourseRecord = {
   id: string;
   title: string;
   slug: string;
   description: string;
-  createdById: string;
   version: number;
   status: ApiCoursePayload["status"];
   structure: SeededCourseStructure | null;
 };
 
-function toApiCoursePayload(row: SeededCourseRecord): ApiCoursePayload {
+function toApiCoursePayload(row: CourseRecord): ApiCoursePayload {
   const structure = row.structure ?? {};
 
   return {
@@ -52,9 +49,11 @@ function toApiCoursePayload(row: SeededCourseRecord): ApiCoursePayload {
   };
 }
 
-export default async function StoryboardPage({ params }: StoryboardPageProps) {
+export default async function AdminPreviewPage({
+  params,
+}: AdminPreviewPageProps) {
   const session = await getSessionSafely();
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     redirect("/auth/signin");
   }
 
@@ -63,26 +62,22 @@ export default async function StoryboardPage({ params }: StoryboardPageProps) {
     redirect(dashboardPath);
   }
 
-  const { courseId } = await params;
-  const course = (await fetchCourseBySlug(courseId)) as SeededCourseRecord;
-  const isReadOnly = !session.user.id || course.createdById !== session.user.id;
+  const { slug } = await params;
+  const course = (await fetchCourseBySlug(slug)) as CourseRecord | undefined;
+
+  if (!course) {
+    redirect("/admin/dashboard");
+  }
 
   return (
-    <main className="space-y-4 p-4 sm:p-6">
-      <div className="flex items-center justify-end">
-        <Link
-          href={`/admin/preview/${course.slug}`}
-          className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted"
-        >
-          Preview in Course Runner
-        </Link>
-      </div>
-
-      <Workspace
-        initialCourse={toApiCoursePayload(course)}
-        courseRecordId={course.id}
-        readOnly={isReadOnly}
-      />
-    </main>
+    <CourseRunner
+      enrollmentId="preview"
+      courseRecordId={course.id}
+      course={toApiCoursePayload(course)}
+      completedLessonIds={[]}
+      passedModuleEvalIds={[]}
+      courseEvalPassed={false}
+      previewMode
+    />
   );
 }

@@ -94,7 +94,7 @@ export default function ImageBlockDetail({
       </label>
       <input
         type="file"
-        accept="image/*"
+        accept="image/*,.svg"
         onChange={(event) => {
           void handleFileSelect(event);
         }}

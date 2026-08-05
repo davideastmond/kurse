@@ -2,6 +2,7 @@
 
 import type { SigninActionState } from "@/app/auth/signin/definitions";
 import type { SignupActionState } from "@/app/auth/signup/definitions";
+import { getRedisClientConnected } from "@/app/utils/redis/redis-client";
 import { signIn } from "@/auth/auth";
 import {
   getDashboardPathForEmail,
@@ -38,6 +39,39 @@ const signinSchema = z.object({
   email: z.email("Enter a valid email address.").transform((v) => v.trim()),
   password: z.string().min(1, "Enter your password."),
 });
+
+const SIGNIN_RATE_LIMIT_WINDOW_SECONDS = 5 * 60;
+const SIGNIN_RATE_LIMIT_MAX_ATTEMPTS = 8;
+
+async function evaluateSignInRateLimit(normalizedEmail: string) {
+  try {
+    const redis = await getRedisClientConnected();
+    const key = `signin:attempts:${normalizedEmail}`;
+
+    const attempts = await redis.incr(key);
+
+    if (attempts === 1) {
+      await redis.expire(key, SIGNIN_RATE_LIMIT_WINDOW_SECONDS);
+    }
+
+    if (attempts > SIGNIN_RATE_LIMIT_MAX_ATTEMPTS) {
+      const ttl = await redis.ttl(key);
+
+      return {
+        allowed: false as const,
+        retryAfterSeconds:
+          typeof ttl === "number" && ttl > 0
+            ? ttl
+            : SIGNIN_RATE_LIMIT_WINDOW_SECONDS,
+      };
+    }
+
+    return { allowed: true as const };
+  } catch (error) {
+    console.error("Sign-in rate limit check failed, continuing:", error);
+    return { allowed: true as const };
+  }
+}
 
 export async function registerUserAction(
   _previousState: SignupActionState,
@@ -86,10 +120,7 @@ export async function registerUserAction(
     if (existing.length > 0) {
       return {
         status: "error",
-        message: "An account with that email already exists.",
-        fieldErrors: {
-          email: "Use a different email or sign in.",
-        },
+        message: "Could not create your account right now. Please try again.",
       };
     }
 
@@ -141,10 +172,25 @@ export async function signInUserAction(
   }
 
   try {
+    const normalizedEmail = parsed.data.email.toLowerCase();
+    const rateLimit = await evaluateSignInRateLimit(normalizedEmail);
+
+    if (!rateLimit.allowed) {
+      const retryMessage =
+        rateLimit.retryAfterSeconds < 60
+          ? `Too many sign-in attempts. Please wait ${rateLimit.retryAfterSeconds}s and try again.`
+          : "Too many sign-in attempts. Please wait a few minutes and try again.";
+
+      return {
+        status: "error",
+        message: retryMessage,
+      };
+    }
+
     const redirectTo = await getDashboardPathForEmail(parsed.data.email);
 
     await signIn("credentials", {
-      email: parsed.data.email.toLowerCase(),
+      email: normalizedEmail,
       password: parsed.data.password,
       redirectTo,
     });

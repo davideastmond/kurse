@@ -157,6 +157,7 @@ export default function CourseRunner({
   completedLessonIds,
   passedModuleEvalIds,
   courseEvalPassed: initialCourseEvalPassed,
+  previewMode = false,
 }: CourseRunnerProps) {
   const [isPending, startTransition] = useTransition();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -193,6 +194,16 @@ export default function CourseRunner({
     return flat;
   }, [course.modules]);
 
+  const allLessonIds = useMemo(() => {
+    return lessonRefs.map((lessonRef) => lessonRef.lesson.id);
+  }, [lessonRefs]);
+
+  const allModuleEvalIds = useMemo(() => {
+    return course.modules
+      .filter((moduleItem) => Boolean(moduleItem.evaluation))
+      .map((moduleItem) => moduleItem.id);
+  }, [course.modules]);
+
   // Unlock / progress derivation.
   const { unlockedLessonIds, unlockedModuleEvalIds, courseEvalUnlocked } =
     useMemo(
@@ -200,6 +211,18 @@ export default function CourseRunner({
         deriveProgressState(course.modules, completedSet, passedModuleEvalSet),
       [course.modules, completedSet, passedModuleEvalSet],
     );
+
+  const visibleUnlockedLessonIds = useMemo(
+    () => (previewMode ? new Set(allLessonIds) : unlockedLessonIds),
+    [allLessonIds, previewMode, unlockedLessonIds],
+  );
+
+  const visibleUnlockedModuleEvalIds = useMemo(
+    () => (previewMode ? new Set(allModuleEvalIds) : unlockedModuleEvalIds),
+    [allModuleEvalIds, previewMode, unlockedModuleEvalIds],
+  );
+
+  const visibleCourseEvalUnlocked = previewMode ? true : courseEvalUnlocked;
 
   // Current lesson/module context.
   const selectedLessonRef = useMemo(() => {
@@ -310,6 +333,17 @@ export default function CourseRunner({
 
     setErrorMessage(null);
 
+    if (previewMode) {
+      setCompletedSet((prev) => {
+        const next = new Set(prev);
+        next.add(selectedLessonRef.lesson.id);
+        return next;
+      });
+
+      navigate(afterLessonTarget);
+      return;
+    }
+
     startTransition(async () => {
       const result = await completeLessonProgress({
         enrollmentId,
@@ -386,23 +420,23 @@ export default function CourseRunner({
             currentView.type === "module_eval" ? currentView.moduleId : null
           }
           courseEvalSelected={currentView.type === "course_eval"}
-          unlockedLessonIds={unlockedLessonIds}
+          unlockedLessonIds={visibleUnlockedLessonIds}
           completedLessonIds={completedSet}
-          unlockedModuleEvalIds={unlockedModuleEvalIds}
+          unlockedModuleEvalIds={visibleUnlockedModuleEvalIds}
           passedModuleEvalIds={passedModuleEvalSet}
-          courseEvalUnlocked={courseEvalUnlocked}
+          courseEvalUnlocked={visibleCourseEvalUnlocked}
           courseEvalPassed={courseEvalPassed}
           progressPercent={progressPercent}
           onSelectLesson={(lessonId) => {
-            if (!unlockedLessonIds.has(lessonId)) return;
+            if (!visibleUnlockedLessonIds.has(lessonId)) return;
             navigate({ type: "lesson", lessonId });
           }}
           onSelectModuleEval={(moduleId) => {
-            if (!unlockedModuleEvalIds.has(moduleId)) return;
+            if (!visibleUnlockedModuleEvalIds.has(moduleId)) return;
             navigate({ type: "module_eval", moduleId });
           }}
           onSelectCourseEval={() => {
-            if (!courseEvalUnlocked) return;
+            if (!visibleCourseEvalUnlocked) return;
             navigate({ type: "course_eval" });
           }}
         />
@@ -443,23 +477,23 @@ export default function CourseRunner({
                 currentView.type === "module_eval" ? currentView.moduleId : null
               }
               courseEvalSelected={currentView.type === "course_eval"}
-              unlockedLessonIds={unlockedLessonIds}
+              unlockedLessonIds={visibleUnlockedLessonIds}
               completedLessonIds={completedSet}
-              unlockedModuleEvalIds={unlockedModuleEvalIds}
+              unlockedModuleEvalIds={visibleUnlockedModuleEvalIds}
               passedModuleEvalIds={passedModuleEvalSet}
-              courseEvalUnlocked={courseEvalUnlocked}
+              courseEvalUnlocked={visibleCourseEvalUnlocked}
               courseEvalPassed={courseEvalPassed}
               progressPercent={progressPercent}
               onSelectLesson={(lessonId) => {
-                if (!unlockedLessonIds.has(lessonId)) return;
+                if (!visibleUnlockedLessonIds.has(lessonId)) return;
                 navigate({ type: "lesson", lessonId });
               }}
               onSelectModuleEval={(moduleId) => {
-                if (!unlockedModuleEvalIds.has(moduleId)) return;
+                if (!visibleUnlockedModuleEvalIds.has(moduleId)) return;
                 navigate({ type: "module_eval", moduleId });
               }}
               onSelectCourseEval={() => {
-                if (!courseEvalUnlocked) return;
+                if (!visibleCourseEvalUnlocked) return;
                 navigate({ type: "course_eval" });
               }}
             />
@@ -468,6 +502,13 @@ export default function CourseRunner({
       </div>
 
       <main className="space-y-4 p-4 sm:p-6">
+        {previewMode ? (
+          <section className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning">
+            Preview mode is active. Progress and evaluation attempts are local
+            only and are not saved.
+          </section>
+        ) : null}
+
         {/* Overview / welcome screen */}
         {currentView.type === "overview" ? (
           <section className="mx-auto flex min-h-[calc(100vh-9rem)] w-full max-w-5xl flex-col items-center justify-center gap-4 p-6 text-center sm:min-h-[calc(100vh-12rem)]">
@@ -555,6 +596,7 @@ export default function CourseRunner({
             courseSlug={course.slug}
             scope="MODULE"
             moduleId={selectedModule.id}
+            previewMode={previewMode}
             onPass={() => handleModuleEvalPass(selectedModule.id)}
           />
         ) : null}
@@ -567,6 +609,7 @@ export default function CourseRunner({
             courseRecordId={courseRecordId}
             courseSlug={course.slug}
             scope="COURSE"
+            previewMode={previewMode}
             onPass={handleCourseEvalPass}
           />
         ) : null}

@@ -29,10 +29,6 @@ export default function CourseEvaluationCanvas({
     setIsWizardOpen(false);
   }
 
-  function handleWizardClose() {
-    setIsWizardOpen(false);
-  }
-
   const handleGenerateWithAi = useCallback(
     async (numberOfQuestions: number) => {
       const result = await generateCourseEvaluationQuiz({
@@ -113,7 +109,7 @@ export default function CourseEvaluationCanvas({
       {!readOnly && isWizardOpen ? (
         <QuizWizard
           initialQuiz={initialQuiz}
-          onClose={handleWizardClose}
+          onClose={() => setIsWizardOpen(false)}
           onSave={handleWizardSave}
           onGenerateWithAi={handleGenerateWithAi}
           defaultAiQuestionCount={5}
